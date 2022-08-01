@@ -2,18 +2,28 @@
 
 namespace Tests\Feature;
 
-use App\Http\Responses\ApiResponse;
+use App\Http\Responses\ApiCode;
 use Tests\TestCase;
 
 class ApiTestCase extends TestCase
 {
-    public function successResponse(array $data = []): ApiResponse
+    /**
+     */
+    public function getSuccessResponse(array $data = []): array
     {
-        return (new ApiResponse($data))->toArray();
+        return [
+            'code' => ApiCode::SUCCESS,
+            'data' => $data,
+            'validation_errors' => []
+        ];
     }
 
-    public function failResponse(array $errors = []): ApiResponse
+    public function getFailResponse(array $errors = []): array
     {
-        return (new ApiResponse())->fail($errors)->toArray();
+        return [
+            'code' => ApiCode::SUCCESS,
+            'data' => [],
+            'validation_errors' => $errors
+        ];
     }
 }

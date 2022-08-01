@@ -2,6 +2,9 @@
 
 namespace App\Http\Responses;
 
+/**
+ * Api custom codes.
+ */
 enum ApiCode: int
 {
     /**
@@ -15,12 +18,4 @@ enum ApiCode: int
      * @var int
      */
     case ERROR = 0;
-
-    public static function all(): array
-    {
-        return [
-            self::SUCCESS,
-            self::ERROR
-        ];
-    }
 }
