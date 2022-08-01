@@ -9,6 +9,7 @@ class TestController extends Controller
 {
     public function basicResponse()
     {
+        dd(route('api.v1.auth.register'));
         return new ApiResponse(['test']);
     }
 }

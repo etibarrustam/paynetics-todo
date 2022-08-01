@@ -2,7 +2,9 @@
 
 namespace App\Exceptions;
 
+use App\Http\Responses\ApiResponse;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -46,5 +48,15 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+    }
+
+    /**
+     * {@inheritdoc}
+     * @throws Throwable
+     */
+    protected function invalidJson($request, ValidationException $exception): ApiResponse
+    {
+        return (new ApiResponse())
+            ->setValidationExceptionErrors($exception);
     }
 }

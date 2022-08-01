@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\API\V1\AuthController;
+use App\Http\Controllers\API\V1\ProjectController;
+use App\Http\Controllers\API\V1\TaskController;
 use App\Http\Controllers\API\V1\TestController;
+use App\Models\UserRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,17 +19,27 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-
-Route::group(['as' => 'auth.'], function () {
-    Route::post('/register', [AuthController::class, 'register'])->name('register');
-    Route::post('/login', [AuthController::class, 'login'])->name('login');
-    Route::post('/logout', [AuthController::class, 'logout'])
+Route::group(['as' => 'auth.'], static function () {
+    Route::post('register/{type}', [AuthController::class, 'register'])
+        ->name('register');
+//        ->where('type', implode('|', array_column(UserRole::cases(), 'values')));
+    Route::post('login', [AuthController::class, 'login'])->name('login');
+    Route::get('logout', [AuthController::class, 'logout'])
         ->name('logout')->middleware('auth:sanctum');
 });
 
-Route::group(['middleware' => 'auth:sanctum'], function () {
-    Route::get('/test', [TestController::class, 'basicResponse']);
+Route::group(['middleware' => 'auth:sanctum'], static function () {
+    Route::group(['as' => 'projects.', 'prefix' => 'projects'], static function () {
+        Route::get('statuses', [ProjectController::class, 'getStatuses'])->name('statuses');
+        Route::get('/', [ProjectController::class, 'all'])->name('all');
+        Route::get('/{id}', [ProjectController::class, 'getById'])->name('get-by-id')->where(['id' => '[0-9]+']);
+        Route::post('/', [ProjectController::class, 'store'])->name('store');
+        Route::put('/{id}', [ProjectController::class, 'update'])->name('update');
+    });
+    Route::group(['as' => 'tasks.', 'prefix' => 'tasks'], static function () {
+        Route::get('/', [TaskController::class, 'all'])->name('all');
+        Route::get('/{id}', [TaskController::class, 'getById'])->name('get-by-id')->where(['id' => '[0-9]+']);
+        Route::post('/', [TaskController::class, 'store'])->name('store');
+        Route::put('/{id}', [TaskController::class, 'update'])->name('update');
+    });
 });

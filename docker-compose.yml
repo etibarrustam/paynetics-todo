@@ -44,6 +44,11 @@ services:
             - ./src:/var/www/html
         networks:
             - paynetics_app
+    phpcs:
+        image: cytopia/phpcs
+        volumes:
+            - ./src:/var/www/html
+            - ./CodeSniffer.conf:/usr/bin/CodeSniffer.conf
     composer:
         build:
             context: ./docker

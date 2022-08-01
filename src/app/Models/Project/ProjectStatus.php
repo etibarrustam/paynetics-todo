@@ -2,6 +2,9 @@
 
 namespace App\Models\Project;
 
+/**
+ * Project statuses.
+ */
 enum ProjectStatus: int
 {
     case NEW = 0;
@@ -9,6 +12,11 @@ enum ProjectStatus: int
     case FAILED = 2;
     case DONE = 3;
 
+    /**
+     * Get status label by id.
+     * @param ProjectStatus $value
+     * @return string
+     */
     public static function getLabel(self $value): string
     {
         return match ($value) {
@@ -17,15 +25,5 @@ enum ProjectStatus: int
             self::FAILED => 'Failed',
             self::DONE => 'Done',
         };
-    }
-
-    public static function all(): array
-    {
-        return [
-            self::NEW,
-            self::PENDING,
-            self::FAILED,
-            self::DONE,
-        ];
     }
 }
