@@ -15,6 +15,14 @@ return new class extends Migration
     {
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->nullable()
+                ->references('id')
+                ->on('users')
+                ->onDelete('set null');
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->timestamp('start_at')->nullable();
+            $table->timestamp('end_at')->nullable();
             $table->foreignId('project_id')->references('id')->on('projects')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
