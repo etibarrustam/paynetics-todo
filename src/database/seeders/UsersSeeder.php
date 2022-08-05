@@ -17,6 +17,8 @@ class UsersSeeder extends Seeder
      */
     public function run(): void
     {
+        User::truncate();
+
         foreach (range(1, 5) as $clientIndex) {
             $client = User::firstOrCreate(
                 [

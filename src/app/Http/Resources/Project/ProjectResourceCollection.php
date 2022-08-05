@@ -6,5 +6,8 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
 
 class ProjectResourceCollection extends ResourceCollection
 {
-    public $resource = TaskResource::class;
+    /**
+     * @inheritdoc
+     */
+    public $resource = ProjectResource::class;
 }

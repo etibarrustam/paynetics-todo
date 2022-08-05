@@ -16,8 +16,8 @@ __webpack_require__.r(__webpack_exports__);
   data: function data() {
     return {
       loginData: {
-        email: '',
-        password: ''
+        email: 'paynetics1@gmail.com',
+        password: '1!Paynetics@6'
       }
     };
   },
@@ -27,16 +27,22 @@ __webpack_require__.r(__webpack_exports__);
 
       var loading = this.block('loginLoader');
       this.axios.post('api/v1/login', this.loginData).then(function (response) {
-        if (response.data.status === true) {
+        console.log(response.data);
+
+        if (response.data.code === 1) {
+          var data = response.data.data;
           loading.close();
-          window.location.href = '/dashboard';
+          axios.defaults.headers.common['Authorization'] = 'Bearer ' + data.token;
+          localStorage.setItem('token', JSON.stringify(data.token));
+
+          _this.$router.push('dashboard');
         } else {
           _this.errorNotification(response.data.message);
 
           loading.close();
         }
       })["catch"](function (error) {
-        _this.errorNotification(error.response.data.message);
+        console.log(error); // this.errorNotification(error.response.data.errors)
 
         loading.close();
       });

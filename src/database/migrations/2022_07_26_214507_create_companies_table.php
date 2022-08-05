@@ -19,10 +19,6 @@ return new class extends Migration
                 ->references('id')
                 ->on('users')
                 ->onDelete('set null');
-            $table->foreignId('client_id')
-                ->references('id')
-                ->on('users')
-                ->onDelete('cascade');
             $table->string('name');
             $table->string('address')->nullable();
             $table->timestamps();

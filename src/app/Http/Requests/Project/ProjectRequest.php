@@ -14,7 +14,7 @@ class ProjectRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -25,10 +25,10 @@ class ProjectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
-            'description' => 'required|string',
-            'status' => "required|in:" . implode(',', array_column(ProjectStatus::cases(), 'value')),
-            'duration' => 'nullable|date'
+            "name" => "required|string|max:255",
+            "description" => "required|string",
+            "company_id" => "sometimes|exists:companies,id",
+            "status" => "required|in:" . implode(",", ProjectStatus::toArray()),
         ];
     }
 }

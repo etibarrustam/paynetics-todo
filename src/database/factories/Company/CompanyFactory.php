@@ -24,7 +24,7 @@ class CompanyFactory  extends Factory
         return [
             'name' => fake()->company(),
             'address' => fake()->address(),
-            'client_id' => $client
+            'user_id' => $client
         ];
     }
 
@@ -36,7 +36,7 @@ class CompanyFactory  extends Factory
     public function withClient(User $client): static
     {
         return $this->state([
-            'client_id' => $client,
+            'user_id' => $client,
         ]);
     }
 }

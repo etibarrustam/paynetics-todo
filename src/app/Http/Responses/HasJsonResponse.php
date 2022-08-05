@@ -36,7 +36,7 @@ trait HasJsonResponse
      */
     public function serviceUnavailable(): ApiResponse
     {
-        return (new ApiResponse())->fail([
+        return $this->failResponse([
             'server' => __('exceptions.service_unavailable')
         ]);
     }

@@ -8,7 +8,7 @@
                             <h6 class="h2 text-white d-inline-block mb-0">Project</h6>
                         </div>
                         <div class="col-lg-6 col-5 text-right">
-                            <a href="#" class="btn btn-sm btn-neutral" @click="addProjectModel=!addProjectModel">New</a>
+                            <a href="#" class="btn btn-sm btn-neutral" @click="newProject">New</a>
                         </div>
                     </div>
                 </div>
@@ -32,7 +32,7 @@
                             <table class="table align-items-center table-flush">
                                 <thead class="thead-light">
                                 <tr>
-                                    <th scope="col" class="sort">Project</th>
+                                    <th scope="col" class="sort">Name</th>
                                     <th scope="col" class="sort">Budget</th>
                                     <th scope="col" class="sort">Responsible User</th>
                                     <th scope="col" class="sort">Status</th>
@@ -51,17 +51,17 @@
                                         </div>
                                     </th>
                                     <td class="budget">
-                                        {{ item.budget }}
+<!--                                        {{ item.budget }}-->
                                     </td>
                                     <td>
-                                        {{ item.responsible_user }}
+                                        {{ item.description }}
                                     </td>
                                     <td>
                                         <span class="badge badge-dot mr-4">
-                                            <i class="bg-warning" v-if="item.status == status.pending"></i>
-                                            <i class="bg-success" v-if="item.status == status.completed"></i>
-                                            <i class="bg-danger" v-if="item.status == status.delayed"></i>
-                                            <i class="bg-info" v-if="item.status == status.schedule"></i>
+<!--                                            <i class="bg-warning" v-if="item.status == status.pending"></i>-->
+<!--                                            <i class="bg-success" v-if="item.status == status.completed"></i>-->
+<!--                                            <i class="bg-danger" v-if="item.status == status.delayed"></i>-->
+<!--                                            <i class="bg-info" v-if="item.status == status.schedule"></i>-->
                                             <span class="status">{{ item.status }}</span>
                                         </span>
                                     </td>
@@ -70,10 +70,10 @@
                                             <span class="completion mr-2">{{ item.completion }} %</span>
                                             <div>
                                                 <div class="progress">
-                                                    <div class="progress-bar bg-warning" v-if="item.status == status.pending" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>
-                                                    <div class="progress-bar bg-success" v-if="item.status == status.completed" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>
-                                                    <div class="progress-bar bg-danger" v-if="item.status == status.delayed" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>
-                                                    <div class="progress-bar bg-info" v-if="item.status == status.schedule" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>
+<!--                                                    <div class="progress-bar bg-warning" v-if="item.status == status.pending" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>-->
+<!--                                                    <div class="progress-bar bg-success" v-if="item.status == status.completed" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>-->
+<!--                                                    <div class="progress-bar bg-danger" v-if="item.status == status.delayed" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>-->
+<!--                                                    <div class="progress-bar bg-info" v-if="item.status == status.schedule" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>-->
                                                 </div>
                                             </div>
                                         </div>
@@ -86,7 +86,7 @@
                                     <td>
                                         <div style="display: inline-flex">
                                             <div>
-                                                <button class="btn btn-primary btn-sm" @click="editBtn(item.id)">
+                                                <button class="btn btn-primary btn-sm" @click="edit(item.id)">
                                                     <i class="far fa-edit"></i>
                                                     <span><strong>Edit</strong></span>
                                                 </button>
@@ -111,86 +111,39 @@
                 </div>
             </div>
         </div>
-        <vs-dialog v-model="addProjectModel" prevent-close blur>
+        <vs-dialog v-model="createForm" prevent-close blur>
             <template #header>
                 <h4 class="not-margin">
                     Add New <b>Project</b>
                 </h4>
             </template>
-            <form v-on:submit.prevent="addProject()" id="addProjectForm" ref="resetForm">
+            <form v-on:submit.prevent="createOrUpdate()" id="addProjectForm" ref="resetForm">
                 <div class="form-group">
-                    <label class="form-control-label">Name Of Project</label>
-                    <input class="form-control" placeholder="Name" v-model="addPostData.name"/>
+                    <label class="form-control-label">Name</label>
+                    <input class="form-control" placeholder="Name" v-model="project.name"/>
                 </div>
-                <div class="form-group mt--3">
-                    <label class="form-control-label">Budget</label>
-                    <input type="number" class="form-control" placeholder="Budget" v-model="addPostData.budget"/>
-                </div>
-                <div class="form-group mt--3">
-                    <label class="form-control-label">Responsible User</label>
-                    <input class="form-control" placeholder="Responsible User" v-model="addPostData.responsible_user"/>
+                <div class="form-group">
+                    <label class="form-control-label">Description</label>
+                    <input class="form-control" placeholder="Description" v-model="project.description"/>
                 </div>
                 <div class="form-group mt--3">
                     <label class="form-control-label">Status</label>
-                    <select class="form-control" @change="onChangeStatus($event)">
-                        <option value="0">Select Status</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="SCHEDULE">On Schedule</option>
-                        <option value="DELAYED">Delayed</option>
+                    <select class="form-control" @change="onChangeStatus($event)" ref="getStatus" v-model="project.status">
+                        <option :value="status.value" v-for="status in statuses">
+                            {{ status.label }}
+                        </option>
                     </select>
                 </div>
                 <div class="form-group mt--3">
-                    <label class="form-control-label">Completion</label>
-                    <input type="number" class="form-control" max="100" placeholder="50"
-                           v-model="addPostData.completion"/>
+                    <label class="form-control-label">Duration</label>
+                    <input class="form-control" placeholder="due date" type="date" v-model="project.duration"/>
                 </div>
                 <div class="footer-dialog text-center">
-                    <button class="btn btn-primary" type="submit">Add New Project</button>
+                    <button class="btn btn-primary" type="submit" v-if="!project.id">Add New Project</button>
+                    <button class="btn btn-primary" type="submit" v-else>Edit Project</button>
                 </div>
             </form>
         </vs-dialog>
-
-        <vs-dialog v-model="editProjectModel" prevent-close blur>
-            <template #header>
-                <h4 class="not-margin">
-                    Add New <b>Project</b>
-                </h4>
-            </template>
-            <form v-on:submit.prevent="updateProject()" id="editProjectForm">
-                <div class="form-group">
-                    <label class="form-control-label">Name Of Project</label>
-                    <input class="form-control" placeholder="Name" v-model="editPostData.name"/>
-                </div>
-                <div class="form-group mt--3">
-                    <label class="form-control-label">Budget</label>
-                    <input type="number" class="form-control" placeholder="Budget" v-model="editPostData.budget"/>
-                </div>
-                <div class="form-group mt--3">
-                    <label class="form-control-label">Responsible User</label>
-                    <input class="form-control" placeholder="Responsible User" v-model="editPostData.responsible_user"/>
-                </div>
-                <div class="form-group mt--3">
-                    <label class="form-control-label">Status</label>
-                    <select class="form-control" @change="onEditChangeStatus($event)" ref="getStatus">
-                        <option value="0">Select Status</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="SCHEDULE">On Schedule</option>
-                        <option value="DELAYED">Delayed</option>
-                    </select>
-                </div>
-                <div class="form-group mt--3">
-                    <label class="form-control-label">Completion</label>
-                    <input type="number" class="form-control" max="100" placeholder="50"
-                           v-model="editPostData.completion"/>
-                </div>
-                <div class="footer-dialog text-center">
-                    <button class="btn btn-primary" type="submit">Update Project</button>
-                </div>
-            </form>
-        </vs-dialog>
-
         <vs-dialog width="550px" not-center v-model="deleteDialog">
             <template #header>
                 <h4 class="not-margin">
@@ -217,49 +170,28 @@
 
 <script>
 export default {
-    name: "Dashboard",
+    name: "Project",
     data() {
         return {
-            addPostData: {
-                name: null,
-                budget: null,
-                status: null,
-                completion: null,
-                responsible_user: null
-            },
-            editPostData: {
-                id: null,
-                name: null,
-                budget: null,
-                status: null,
-                completion: null,
-                responsible_user: null
-            },
-            deletePostData: {
-                id: null
-            },
-            items: {},
-            status:{
-                pending : "PENDING",
-                completed : "COMPLETED",
-                schedule : "SCHEDULE",
-                delayed : "DELAYED"
-            },
-
-            addProjectModel: false,
-            editProjectModel: false,
+            project: {},
+            items: [],
+            statuses:[],
+            createForm: false,
             activeTooltip1: false,
             deleteDialog: false,
             dataNotFound : false,
         }
     },
     methods: {
-        getProject() {
+        newProject() {
+            this.resetProject();
+            this.createForm =! this.createForm
+        },
+        getProjects() {
             let loading = this.block("projectLoading");
             this.axios.get("/api/v1/projects")
                 .then(response => {
                     this.items = response.data.data;
-                    console.log(response.data.data)
                     this.dataNotFound = false
                     loading.close()
                 })
@@ -270,18 +202,21 @@ export default {
                     loading.close()
                 })
         },
-        addProject() {
+        createOrUpdate() {
+            if (this.project.id) {
+                return this.update();
+            }
             let Loading = this.block("addProjectForm");
-            this.axios.post('api/v1/add/project', this.addPostData)
+            this.axios.post('api/v1/projects', this.project)
                 .then(response => {
-                    if (response.data.status === true) {
-                        this.$refs.resetForm.reset();
+                    if (response.data.code === 1) {
+                        this.resetProject();
                         Loading.close();
-                        this.addProjectModel = false;
-                        this.getProject()
+                        this.createForm = false;
+                        this.getProjects();
                     } else {
-                        this.errorNotification(response.data.message)
-                        Loading.close()
+                        this.errorNotification(response.data.data.validation_errors);
+                        Loading.close();
                     }
                 })
                 .catch(error => {
@@ -289,26 +224,23 @@ export default {
                     Loading.close()
                 });
         },
-        updateProject() {
-            let Loading = this.block("editProjectForm");
-            this.axios.put("/api/v1/update/project", this.editPostData)
+        update() {
+            let Loading = this.block("addProjectForm");
+            this.axios.put("/api/v1/projects/" + this.project.id, this.project)
                 .then(response => {
-                    this.editProjectModel = false;
+                    this.createForm = false;
                     this.successNotification(response.data.message);
                     Loading.close()
-                    this.getProject()
+                    this.getProjects()
                 })
                 .catch(error => {
-                    this.editProjectModel = false;
+                    this.createForm = false;
                     this.errorNotification(error.response.data.message);
                     Loading.close()
                 });
         },
         onChangeStatus(event) {
-            this.addPostData.status = event.target.value;
-        },
-        onEditChangeStatus(event) {
-            this.editPostData.status = event.target.value;
+            this.project.status = event.target.value;
         },
         deleteBtn(id) {
             if (id == '') {
@@ -319,7 +251,7 @@ export default {
         },
         deleteProject() {
             let Loading = this.block("deleteLoading");
-            this.axios.delete("/api/v1/delete/project/" + this.deletePostData.id)
+            this.axios.delete("/api/v1/projects/" + this.deletePostData.id)
                 .then(response => {
                     if (response.data.status === true) {
                         this.deleteDialog = false;
@@ -338,26 +270,36 @@ export default {
                     this.errorNotification(error.response.data.message)
                 });
         },
-        editBtn(id) {
-            this.editPostData.id = id;
-            this.editProjectModel = true;
-            this.axios.get("/api/v1/get/project/" + id)
+        edit(id) {
+            this.items.forEach((item) => {
+                if (item.id === id) {
+                    this.project = item;
+                }
+            });
+            this.createForm = true;
+        },
+        getStatuses() {
+            this.axios.get("/api/v1/projects/statuses")
                 .then(response => {
-                    let item = response.data.data;
-                    this.editPostData.name = item.name;
-                    this.editPostData.budget = item.budget;
-                    this.editPostData.completion = item.completion;
-                    this.editPostData.responsible_user = item.responsible_user;
-                    this.editPostData.status = item.status;
-                    this.$refs.getStatus.value = item.status;
+                    this.statuses = response.data.data;
                 })
                 .catch(error => {
                     console.log(error.response.data)
                 });
         },
+        resetProject() {
+            this.project = {
+                name: null,
+                description: null,
+                status: null,
+                duration: null
+            };
+        }
     },
     mounted() {
-        this.getProject()
+        this.resetProject();
+        this.getProjects();
+        this.getStatuses();
     }
 }
 </script>

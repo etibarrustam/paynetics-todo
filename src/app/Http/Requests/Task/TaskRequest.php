@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Task;
 
-use App\Models\Project\ProjectStatus;
+use App\Models\Task\TaskStatus;
 use Illuminate\Foundation\Http\FormRequest;
 
 class TaskRequest extends FormRequest
@@ -14,7 +14,7 @@ class TaskRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -25,11 +25,11 @@ class TaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'project_id' => 'required|integer|exists:projects,id',
-            'name' => 'required|string',
-            'description' => 'required|string',
-            'start_at' => 'nullable|date',
-            'end_at' => 'nullable|date'
+            "status" => "required|in:" . implode(',', TaskStatus::toArray()),
+            "name" => "required|string|max:255",
+            "description" => "required|string",
+            "start_at" => "nullable|date",
+            "end_at" => "nullable|date"
         ];
     }
 }
