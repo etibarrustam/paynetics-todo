@@ -16,18 +16,11 @@ return new class extends Migration
     {
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()
-                ->references('id')
-                ->on('users')
-                ->onDelete('set null');
-            $table->foreignId('company_id')
-                ->references('id')
-                ->on('companies')
-                ->onDelete('cascade');
+            $table->unsignedBigInteger('projectable_id');
+            $table->tinyInteger('status')->default(ProjectStatus::NEW->value);
+            $table->string('projectable_type');
             $table->string('name');
             $table->text('description')->nullable();
-            $table->tinyInteger('status')->default(ProjectStatus::NEW->value);
-            $table->timestamp('duration')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

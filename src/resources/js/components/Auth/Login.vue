@@ -72,8 +72,8 @@ export default {
     data(){
         return{
             loginData:{
-                email:'',
-                password:''
+                email: 'paynetics1@gmail.com',
+                password: '1!Paynetics@6'
             }
         }
     },
@@ -82,16 +82,23 @@ export default {
             let loading = this.block('loginLoader');
             this.axios.post('api/v1/login',this.loginData)
                 .then(response => {
-                    if (response.data.status === true){
+                    console.log(response.data);
+                    if (response.data.code === 1){
+                        let data = response.data.data;
                         loading.close()
-                        window.location.href = '/dashboard';
+                        axios.defaults.headers.common['Authorization'] = 'Bearer ' + data.token;
+
+                        localStorage.setItem( 'token', JSON.stringify(data.token) );
+
+                        this.$router.push('dashboard');
                     }else {
                         this.errorNotification(response.data.message)
                         loading.close()
                     }
                 })
                 .catch(error =>{
-                    this.errorNotification(error.response.data.message)
+                    console.log(error);
+                    // this.errorNotification(error.response.data.errors)
                     loading.close()
                 });
         }

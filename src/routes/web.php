@@ -15,4 +15,5 @@ use Symfony\Component\HttpFoundation\Response;
 |
 */
 
-Route::get('/', [DashboardController::class, 'index']);
+Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+Route::any('/{any}', static fn () => redirect()->route('dashboard'));

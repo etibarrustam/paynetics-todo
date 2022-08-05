@@ -15,28 +15,13 @@ __webpack_require__.r(__webpack_exports__);
   name: "Dashboard",
   data: function data() {
     return {
-      addPostData: {
-        name: null,
-        status: null,
-        responsible_user: null,
-        due_date: null
-      },
-      editPostData: {
-        id: null,
-        name: null,
-        status: null,
-        responsible_user: null,
-        due_date: null
-      },
+      task: {},
       deletePostData: {
         id: null
       },
-      items: {},
-      status: {
-        pending: "PENDING",
-        completed: "COMPLETED"
-      },
-      addTaskModel: false,
+      items: [],
+      statuses: [],
+      createForm: false,
       editTaskModel: false,
       activeTooltip1: false,
       deleteDialog: false,
@@ -44,7 +29,12 @@ __webpack_require__.r(__webpack_exports__);
     };
   },
   methods: {
-    getTask: function getTask() {
+    newTask: function newTask() {
+      console.log('clicked', this.createForm);
+      this.resetTask();
+      this.createForm = !this.createForm;
+    },
+    getTasks: function getTasks() {
       var _this = this;
 
       var loading = this.block("taskLoading");
@@ -53,31 +43,34 @@ __webpack_require__.r(__webpack_exports__);
         loading.close();
         _this.dataNotFound = false;
       })["catch"](function (error) {
-        _this.items = null;
-        console.log(error.response.data);
+        _this.items = [];
         _this.dataNotFound = true;
         loading.close();
       });
     },
-    addTask: function addTask() {
+    createOrUpdate: function createOrUpdate() {
       var _this2 = this;
 
-      var Loading = this.block("addTaskForm");
-      this.axios.post('api/v1/add/task', this.addPostData).then(function (response) {
-        if (response.data.status === true) {
-          document.getElementById("addTaskForm").reset();
-          Loading.close();
-          _this2.addTaskModel = false;
+      if (this.task.id) {
+        return this.update();
+      }
 
-          _this2.getTask();
+      var Loading = this.block("addTaskForm");
+      this.axios.post('api/v1/tasks', this.task).then(function (response) {
+        if (response.data.code === 1) {
+          _this2.resetTask();
+
+          Loading.close();
+          _this2.createFrom = false;
+
+          _this2.getTasks();
         } else {
-          _this2.errorNotification(response.data.message);
+          _this2.errorNotification('Error');
 
           Loading.close();
         }
       })["catch"](function (error) {
-        _this2.errorNotification(error.response.data.message);
-
+        // this.errorNotification(error.response.data.message)
         Loading.close();
       });
     },
@@ -85,14 +78,14 @@ __webpack_require__.r(__webpack_exports__);
       var _this3 = this;
 
       var Loading = this.block("editTaskForm");
-      this.axios.put("/api/v1/update/task", this.editPostData).then(function (response) {
-        _this3.editTaskModel = false;
+      this.axios.put("/api/v1/tasks/" + this.task.id, this.task).then(function (response) {
+        _this3.resetTask();
 
-        _this3.successNotification(response.data.message);
+        _this3.editTaskModel = false; // this.successNotification(response.data.message);
 
         Loading.close();
 
-        _this3.getTask();
+        _this3.getTasks();
       })["catch"](function (error) {
         _this3.editTaskModel = false;
 
@@ -102,7 +95,7 @@ __webpack_require__.r(__webpack_exports__);
       });
     },
     onChangeStatus: function onChangeStatus(event) {
-      this.addPostData.status = event.target.value;
+      this.task.status = event.target.value;
     },
     onEditChangeStatus: function onEditChangeStatus(event) {
       this.editPostData.status = event.target.value;
@@ -142,25 +135,40 @@ __webpack_require__.r(__webpack_exports__);
         _this4.errorNotification(error.response.data.message);
       });
     },
-    editBtn: function editBtn(id) {
+    edit: function edit(id) {
       var _this5 = this;
 
-      this.editPostData.id = id;
-      this.editTaskModel = true;
-      this.axios.get("/api/v1/get/task/" + id).then(function (response) {
-        var item = response.data.data;
-        _this5.editPostData.name = item.name;
-        _this5.editPostData.due_date = item.due_date;
-        _this5.editPostData.responsible_user = item.responsible_user;
-        _this5.editPostData.status = item.status;
-        _this5.$refs.getStatus.value = item.status;
+      this.items.forEach(function (item) {
+        if (item.id === id) {
+          _this5.task = item;
+        }
+      });
+      this.createForm = true;
+    },
+    getStatuses: function getStatuses() {
+      var _this6 = this;
+
+      this.axios.get("/api/v1/projects/statuses").then(function (response) {
+        _this6.statuses = response.data.data;
       })["catch"](function (error) {
         console.log(error.response.data);
       });
+    },
+    resetTask: function resetTask() {
+      this.task = {
+        name: null,
+        project_id: null,
+        description: null,
+        status: null,
+        start_at: null,
+        end_at: null
+      };
     }
   },
   mounted: function mounted() {
-    this.getTask();
+    this.resetTask();
+    this.getTasks();
+    this.getStatuses();
   }
 });
 
@@ -197,9 +205,7 @@ var render = function render() {
       href: "#"
     },
     on: {
-      click: function click($event) {
-        _vm.addTaskModel = !_vm.addTaskModel;
-      }
+      click: _vm.newTask
     }
   }, [_vm._v("New")])])])])])]), _vm._v(" "), _c("div", {
     staticClass: "container-fluid mt--6"
@@ -235,19 +241,15 @@ var render = function render() {
       staticClass: "name mb-0 text-sm"
     }, [_vm._v(_vm._s(item.name))])])])]), _vm._v(" "), _c("td", {
       staticClass: "budget"
-    }, [_vm._v("\n                                    " + _vm._s(item.responsible_user) + "\n                                ")]), _vm._v(" "), _c("td", [_c("span", {
+    }, [_vm._v("\n                                        " + _vm._s(item.description) + "\n                                    ")]), _vm._v(" "), _c("td", [_c("span", {
       staticClass: "badge badge-dot mr-4"
-    }, [item.status == _vm.status.pending ? _c("i", {
-      staticClass: "bg-danger"
-    }) : _vm._e(), _vm._v(" "), item.status == _vm.status.completed ? _c("i", {
-      staticClass: "bg-success"
-    }) : _vm._e(), _vm._v(" "), _c("span", {
+    }, [_c("span", {
       staticClass: "status"
     }, [_vm._v(_vm._s(item.status))])])]), _vm._v(" "), _c("td", [_c("div", {
       staticClass: "d-flex align-items-center"
     }, [_c("span", {
       staticClass: "completion mr-2"
-    }, [_vm._v(_vm._s(item.due_date))])])]), _vm._v(" "), _c("td", [_c("div", {
+    }, [_vm._v(_vm._s(item.end_at))])])]), _vm._v(" "), _c("td", [_c("div", {
       staticStyle: {
         display: "inline-flex"
       }
@@ -255,7 +257,7 @@ var render = function render() {
       staticClass: "btn btn-primary btn-sm",
       on: {
         click: function click($event) {
-          return _vm.editBtn(item.id);
+          return _vm.edit(item.id);
         }
       }
     }, [_c("i", {
@@ -283,16 +285,16 @@ var render = function render() {
       fn: function fn() {
         return [_c("h4", {
           staticClass: "not-margin"
-        }, [_vm._v("\n                Add New "), _c("b", [_vm._v("Task")])])];
+        }, [_vm._v("\n                    Add New "), _c("b", [_vm._v("Task")])])];
       },
       proxy: true
     }]),
     model: {
-      value: _vm.addTaskModel,
+      value: _vm.createForm,
       callback: function callback($$v) {
-        _vm.addTaskModel = $$v;
+        _vm.createForm = $$v;
       },
-      expression: "addTaskModel"
+      expression: "createForm"
     }
   }, [_vm._v(" "), _c("form", {
     attrs: {
@@ -301,57 +303,57 @@ var render = function render() {
     on: {
       submit: function submit($event) {
         $event.preventDefault();
-        return _vm.addTask();
+        return _vm.createOrUpdate();
       }
     }
   }, [_c("div", {
     staticClass: "form-group"
   }, [_c("label", {
     staticClass: "form-control-label"
-  }, [_vm._v("Name Of Task")]), _vm._v(" "), _c("input", {
+  }, [_vm._v("Name")]), _vm._v(" "), _c("input", {
     directives: [{
       name: "model",
       rawName: "v-model",
-      value: _vm.addPostData.name,
-      expression: "addPostData.name"
+      value: _vm.task.name,
+      expression: "task.name"
     }],
     staticClass: "form-control",
     attrs: {
       placeholder: "Name"
     },
     domProps: {
-      value: _vm.addPostData.name
+      value: _vm.task.name
     },
     on: {
       input: function input($event) {
         if ($event.target.composing) return;
 
-        _vm.$set(_vm.addPostData, "name", $event.target.value);
+        _vm.$set(_vm.task, "name", $event.target.value);
       }
     }
   })]), _vm._v(" "), _c("div", {
     staticClass: "form-group mt--3"
   }, [_c("label", {
     staticClass: "form-control-label"
-  }, [_vm._v("Responsible User")]), _vm._v(" "), _c("input", {
+  }, [_vm._v("Description")]), _vm._v(" "), _c("input", {
     directives: [{
       name: "model",
       rawName: "v-model",
-      value: _vm.addPostData.responsible_user,
-      expression: "addPostData.responsible_user"
+      value: _vm.task.description,
+      expression: "task.description"
     }],
     staticClass: "form-control",
     attrs: {
       placeholder: "Responsible User"
     },
     domProps: {
-      value: _vm.addPostData.responsible_user
+      value: _vm.task.description
     },
     on: {
       input: function input($event) {
         if ($event.target.composing) return;
 
-        _vm.$set(_vm.addPostData, "responsible_user", $event.target.value);
+        _vm.$set(_vm.task, "description", $event.target.value);
       }
     }
   })]), _vm._v(" "), _c("div", {
@@ -359,172 +361,44 @@ var render = function render() {
   }, [_c("label", {
     staticClass: "form-control-label"
   }, [_vm._v("Status")]), _vm._v(" "), _c("select", {
-    staticClass: "form-control",
-    on: {
-      change: function change($event) {
-        return _vm.onChangeStatus($event);
-      }
-    }
-  }, [_c("option", {
-    attrs: {
-      value: "0"
-    }
-  }, [_vm._v("Select Status")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "PENDING"
-    }
-  }, [_vm._v("Pending")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "COMPLETED"
-    }
-  }, [_vm._v("Completed")])])]), _vm._v(" "), _c("div", {
-    staticClass: "form-group mt--3"
-  }, [_c("label", {
-    staticClass: "form-control-label"
-  }, [_vm._v("Due Date")]), _vm._v(" "), _c("input", {
     directives: [{
       name: "model",
       rawName: "v-model",
-      value: _vm.addPostData.due_date,
-      expression: "addPostData.due_date"
+      value: _vm.task.status,
+      expression: "task.status"
     }],
-    staticClass: "form-control",
-    attrs: {
-      placeholder: "due date",
-      type: "date"
-    },
-    domProps: {
-      value: _vm.addPostData.due_date
-    },
-    on: {
-      input: function input($event) {
-        if ($event.target.composing) return;
-
-        _vm.$set(_vm.addPostData, "due_date", $event.target.value);
-      }
-    }
-  })]), _vm._v(" "), _c("div", {
-    staticClass: "footer-dialog text-center"
-  }, [_c("button", {
-    staticClass: "btn btn-primary",
-    attrs: {
-      type: "submit"
-    }
-  }, [_vm._v("Add New Task")])])])]), _vm._v(" "), _c("vs-dialog", {
-    attrs: {
-      "prevent-close": "",
-      blur: ""
-    },
-    scopedSlots: _vm._u([{
-      key: "header",
-      fn: function fn() {
-        return [_c("h4", {
-          staticClass: "not-margin"
-        }, [_vm._v("\n                Add New "), _c("b", [_vm._v("Task")])])];
-      },
-      proxy: true
-    }]),
-    model: {
-      value: _vm.editTaskModel,
-      callback: function callback($$v) {
-        _vm.editTaskModel = $$v;
-      },
-      expression: "editTaskModel"
-    }
-  }, [_vm._v(" "), _c("form", {
-    attrs: {
-      id: "editTaskForm"
-    },
-    on: {
-      submit: function submit($event) {
-        $event.preventDefault();
-        return _vm.updateTask();
-      }
-    }
-  }, [_c("div", {
-    staticClass: "form-group"
-  }, [_c("label", {
-    staticClass: "form-control-label"
-  }, [_vm._v("Name Of Task")]), _vm._v(" "), _c("input", {
-    directives: [{
-      name: "model",
-      rawName: "v-model",
-      value: _vm.editPostData.name,
-      expression: "editPostData.name"
-    }],
-    staticClass: "form-control",
-    attrs: {
-      placeholder: "Name"
-    },
-    domProps: {
-      value: _vm.editPostData.name
-    },
-    on: {
-      input: function input($event) {
-        if ($event.target.composing) return;
-
-        _vm.$set(_vm.editPostData, "name", $event.target.value);
-      }
-    }
-  })]), _vm._v(" "), _c("div", {
-    staticClass: "form-group mt--3"
-  }, [_c("label", {
-    staticClass: "form-control-label"
-  }, [_vm._v("Responsible User")]), _vm._v(" "), _c("input", {
-    directives: [{
-      name: "model",
-      rawName: "v-model",
-      value: _vm.editPostData.responsible_user,
-      expression: "editPostData.responsible_user"
-    }],
-    staticClass: "form-control",
-    attrs: {
-      placeholder: "Responsible User"
-    },
-    domProps: {
-      value: _vm.editPostData.responsible_user
-    },
-    on: {
-      input: function input($event) {
-        if ($event.target.composing) return;
-
-        _vm.$set(_vm.editPostData, "responsible_user", $event.target.value);
-      }
-    }
-  })]), _vm._v(" "), _c("div", {
-    staticClass: "form-group mt--3"
-  }, [_c("label", {
-    staticClass: "form-control-label"
-  }, [_vm._v("Status")]), _vm._v(" "), _c("select", {
     ref: "getStatus",
     staticClass: "form-control",
     on: {
-      change: function change($event) {
-        return _vm.onEditChangeStatus($event);
+      change: [function ($event) {
+        var $$selectedVal = Array.prototype.filter.call($event.target.options, function (o) {
+          return o.selected;
+        }).map(function (o) {
+          var val = "_value" in o ? o._value : o.value;
+          return val;
+        });
+
+        _vm.$set(_vm.task, "status", $event.target.multiple ? $$selectedVal : $$selectedVal[0]);
+      }, function ($event) {
+        return _vm.onChangeStatus($event);
+      }]
+    }
+  }, _vm._l(_vm.statuses, function (status) {
+    return _c("option", {
+      domProps: {
+        value: status.value
       }
-    }
-  }, [_c("option", {
-    attrs: {
-      value: "0"
-    }
-  }, [_vm._v("Select Status")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "PENDING"
-    }
-  }, [_vm._v("Pending")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "COMPLETED"
-    }
-  }, [_vm._v("Completed")])])]), _vm._v(" "), _c("div", {
+    }, [_vm._v("\n                            " + _vm._s(status.label) + "\n                        ")]);
+  }), 0)]), _vm._v(" "), _c("div", {
     staticClass: "form-group mt--3"
   }, [_c("label", {
     staticClass: "form-control-label"
-  }, [_vm._v("Due Date")]), _vm._v(" "), _c("input", {
+  }, [_vm._v("Start Date")]), _vm._v(" "), _c("input", {
     directives: [{
       name: "model",
       rawName: "v-model",
-      value: _vm.editPostData.due_date,
-      expression: "editPostData.due_date"
+      value: _vm.task.start_at,
+      expression: "task.start_at"
     }],
     staticClass: "form-control",
     attrs: {
@@ -532,23 +406,54 @@ var render = function render() {
       type: "date"
     },
     domProps: {
-      value: _vm.editPostData.due_date
+      value: _vm.task.start_at
     },
     on: {
       input: function input($event) {
         if ($event.target.composing) return;
 
-        _vm.$set(_vm.editPostData, "due_date", $event.target.value);
+        _vm.$set(_vm.task, "start_at", $event.target.value);
+      }
+    }
+  })]), _vm._v(" "), _c("div", {
+    staticClass: "form-group mt--3"
+  }, [_c("label", {
+    staticClass: "form-control-label"
+  }, [_vm._v("End Date")]), _vm._v(" "), _c("input", {
+    directives: [{
+      name: "model",
+      rawName: "v-model",
+      value: _vm.task.end_at,
+      expression: "task.end_at"
+    }],
+    staticClass: "form-control",
+    attrs: {
+      placeholder: "due date",
+      type: "date"
+    },
+    domProps: {
+      value: _vm.task.end_at
+    },
+    on: {
+      input: function input($event) {
+        if ($event.target.composing) return;
+
+        _vm.$set(_vm.task, "end_at", $event.target.value);
       }
     }
   })]), _vm._v(" "), _c("div", {
     staticClass: "footer-dialog text-center"
-  }, [_c("button", {
+  }, [!_vm.task.id ? _c("button", {
     staticClass: "btn btn-primary",
     attrs: {
       type: "submit"
     }
-  }, [_vm._v("Update Task")])])])]), _vm._v(" "), _c("vs-dialog", {
+  }, [_vm._v("Add New Task")]) : _c("button", {
+    staticClass: "btn btn-primary",
+    attrs: {
+      type: "submit"
+    }
+  }, [_vm._v("Edit Project")])])])]), _vm._v(" "), _c("vs-dialog", {
     attrs: {
       width: "550px",
       "not-center": ""
@@ -573,14 +478,14 @@ var render = function render() {
               return _vm.deleteTask();
             }
           }
-        }, [_vm._v("\n                    Ok\n                ")]), _vm._v(" "), _c("button", {
+        }, [_vm._v("\n                        Ok\n                    ")]), _vm._v(" "), _c("button", {
           staticClass: "btn btn-light",
           on: {
             click: function click($event) {
               _vm.deleteDialog = false;
             }
           }
-        }, [_vm._v("\n                    Cancel\n                ")])])];
+        }, [_vm._v("\n                        Cancel\n                    ")])])];
       },
       proxy: true
     }]),
@@ -677,21 +582,21 @@ render._withStripped = true;
 
 /***/ }),
 
-/***/ "./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css&":
-/*!*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css& ***!
-  \*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css&":
+/*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css& ***!
+  \************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
 /***/ ((module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/laravel-mix/node_modules/css-loader/dist/runtime/api.js */ "./node_modules/laravel-mix/node_modules/css-loader/dist/runtime/api.js");
-/* harmony import */ var _node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
 // Imports
 
-var ___CSS_LOADER_EXPORT___ = _node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
 ___CSS_LOADER_EXPORT___.push([module.id, "\n.btn i:not(:last-child), .btn svg:not(:last-child) {\n    margin-right: unset;\n}\n", ""]);
 // Exports
@@ -700,10 +605,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, "\n.btn i:not(:last-child), .btn svg:no
 
 /***/ }),
 
-/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css&":
-/*!*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css& ***!
-  \*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css&":
+/*!****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css& ***!
+  \****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -712,7 +617,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
 /* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Task_vue_vue_type_style_index_0_id_4cd08a94_lang_css___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/lib/index.js??vue-loader-options!./Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css& */ "./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css&");
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Task_vue_vue_type_style_index_0_id_4cd08a94_lang_css___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/lib/index.js??vue-loader-options!./Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css& */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css&");
 
             
 
@@ -721,11 +626,11 @@ var options = {};
 options.insert = "head";
 options.singleton = false;
 
-var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Task_vue_vue_type_style_index_0_id_4cd08a94_lang_css___WEBPACK_IMPORTED_MODULE_1__["default"], options);
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Task_vue_vue_type_style_index_0_id_4cd08a94_lang_css___WEBPACK_IMPORTED_MODULE_1__["default"], options);
 
 
 
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Task_vue_vue_type_style_index_0_id_4cd08a94_lang_css___WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Task_vue_vue_type_style_index_0_id_4cd08a94_lang_css___WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ }),
 
@@ -807,7 +712,7 @@ __webpack_require__.r(__webpack_exports__);
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Task_vue_vue_type_style_index_0_id_4cd08a94_lang_css___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../node_modules/style-loader/dist/cjs.js!../../../../node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/lib/index.js??vue-loader-options!./Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css& */ "./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css&");
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Task_vue_vue_type_style_index_0_id_4cd08a94_lang_css___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../node_modules/style-loader/dist/cjs.js!../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/lib/index.js??vue-loader-options!./Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css& */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Task/Task.vue?vue&type=style&index=0&id=4cd08a94&lang=css&");
 
 
 /***/ })

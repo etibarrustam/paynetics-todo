@@ -19,9 +19,11 @@ class CompanyProjectsSeeder extends Seeder
     {
         $clients = User::role(UserRole::CLIENT->value)->get();
 
+        Company::truncate();
+        Project::truncate();
         foreach ($clients as $client) {
             $company = Company::factory()->withClient($client)->create();
-            Project::factory()->withCompany($company)->create();
+            Project::factory()->withProjectable($company)->create();
         }
     }
 }

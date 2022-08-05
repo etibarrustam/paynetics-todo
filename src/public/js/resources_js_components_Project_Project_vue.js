@@ -12,49 +12,29 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
-  name: "Dashboard",
+  name: "Project",
   data: function data() {
     return {
-      addPostData: {
-        name: null,
-        budget: null,
-        status: null,
-        completion: null,
-        responsible_user: null
-      },
-      editPostData: {
-        id: null,
-        name: null,
-        budget: null,
-        status: null,
-        completion: null,
-        responsible_user: null
-      },
-      deletePostData: {
-        id: null
-      },
-      items: {},
-      status: {
-        pending: "PENDING",
-        completed: "COMPLETED",
-        schedule: "SCHEDULE",
-        delayed: "DELAYED"
-      },
-      addProjectModel: false,
-      editProjectModel: false,
+      project: {},
+      items: [],
+      statuses: [],
+      createForm: false,
       activeTooltip1: false,
       deleteDialog: false,
       dataNotFound: false
     };
   },
   methods: {
-    getProject: function getProject() {
+    newProject: function newProject() {
+      this.resetProject();
+      this.createForm = !this.createForm;
+    },
+    getProjects: function getProjects() {
       var _this = this;
 
       var loading = this.block("projectLoading");
       this.axios.get("/api/v1/projects").then(function (response) {
         _this.items = response.data.data;
-        console.log(response.data.data);
         _this.dataNotFound = false;
         loading.close();
       })["catch"](function (error) {
@@ -64,20 +44,24 @@ __webpack_require__.r(__webpack_exports__);
         loading.close();
       });
     },
-    addProject: function addProject() {
+    createOrUpdate: function createOrUpdate() {
       var _this2 = this;
 
+      if (this.project.id) {
+        return this.update();
+      }
+
       var Loading = this.block("addProjectForm");
-      this.axios.post('api/v1/add/project', this.addPostData).then(function (response) {
-        if (response.data.status === true) {
-          _this2.$refs.resetForm.reset();
+      this.axios.post('api/v1/projects', this.project).then(function (response) {
+        if (response.data.code === 1) {
+          _this2.resetProject();
 
           Loading.close();
-          _this2.addProjectModel = false;
+          _this2.createForm = false;
 
-          _this2.getProject();
+          _this2.getProjects();
         } else {
-          _this2.errorNotification(response.data.message);
+          _this2.errorNotification(response.data.data.validation_errors);
 
           Loading.close();
         }
@@ -87,20 +71,20 @@ __webpack_require__.r(__webpack_exports__);
         Loading.close();
       });
     },
-    updateProject: function updateProject() {
+    update: function update() {
       var _this3 = this;
 
-      var Loading = this.block("editProjectForm");
-      this.axios.put("/api/v1/update/project", this.editPostData).then(function (response) {
-        _this3.editProjectModel = false;
+      var Loading = this.block("addProjectForm");
+      this.axios.put("/api/v1/projects/" + this.project.id, this.project).then(function (response) {
+        _this3.createForm = false;
 
         _this3.successNotification(response.data.message);
 
         Loading.close();
 
-        _this3.getProject();
+        _this3.getProjects();
       })["catch"](function (error) {
-        _this3.editProjectModel = false;
+        _this3.createForm = false;
 
         _this3.errorNotification(error.response.data.message);
 
@@ -108,10 +92,7 @@ __webpack_require__.r(__webpack_exports__);
       });
     },
     onChangeStatus: function onChangeStatus(event) {
-      this.addPostData.status = event.target.value;
-    },
-    onEditChangeStatus: function onEditChangeStatus(event) {
-      this.editPostData.status = event.target.value;
+      this.project.status = event.target.value;
     },
     deleteBtn: function deleteBtn(id) {
       if (id == '') {
@@ -125,7 +106,7 @@ __webpack_require__.r(__webpack_exports__);
       var _this4 = this;
 
       var Loading = this.block("deleteLoading");
-      this.axios["delete"]("/api/v1/delete/project/" + this.deletePostData.id).then(function (response) {
+      this.axios["delete"]("/api/v1/projects/" + this.deletePostData.id).then(function (response) {
         if (response.data.status === true) {
           _this4.deleteDialog = false;
 
@@ -148,26 +129,38 @@ __webpack_require__.r(__webpack_exports__);
         _this4.errorNotification(error.response.data.message);
       });
     },
-    editBtn: function editBtn(id) {
+    edit: function edit(id) {
       var _this5 = this;
 
-      this.editPostData.id = id;
-      this.editProjectModel = true;
-      this.axios.get("/api/v1/get/project/" + id).then(function (response) {
-        var item = response.data.data;
-        _this5.editPostData.name = item.name;
-        _this5.editPostData.budget = item.budget;
-        _this5.editPostData.completion = item.completion;
-        _this5.editPostData.responsible_user = item.responsible_user;
-        _this5.editPostData.status = item.status;
-        _this5.$refs.getStatus.value = item.status;
+      this.items.forEach(function (item) {
+        if (item.id === id) {
+          _this5.project = item;
+        }
+      });
+      this.createForm = true;
+    },
+    getStatuses: function getStatuses() {
+      var _this6 = this;
+
+      this.axios.get("/api/v1/projects/statuses").then(function (response) {
+        _this6.statuses = response.data.data;
       })["catch"](function (error) {
         console.log(error.response.data);
       });
+    },
+    resetProject: function resetProject() {
+      this.project = {
+        name: null,
+        description: null,
+        status: null,
+        duration: null
+      };
     }
   },
   mounted: function mounted() {
-    this.getProject();
+    this.resetProject();
+    this.getProjects();
+    this.getStatuses();
   }
 });
 
@@ -204,9 +197,7 @@ var render = function render() {
       href: "#"
     },
     on: {
-      click: function click($event) {
-        _vm.addProjectModel = !_vm.addProjectModel;
-      }
+      click: _vm.newProject
     }
   }, [_vm._v("New")])])])])])]), _vm._v(" "), _c("div", {
     staticClass: "container-fluid mt--6"
@@ -242,57 +233,15 @@ var render = function render() {
       staticClass: "name mb-0 text-sm"
     }, [_vm._v(_vm._s(item.name))])])])]), _vm._v(" "), _c("td", {
       staticClass: "budget"
-    }, [_vm._v("\n                                    " + _vm._s(item.budget) + "\n                                ")]), _vm._v(" "), _c("td", [_vm._v("\n                                    " + _vm._s(item.responsible_user) + "\n                                ")]), _vm._v(" "), _c("td", [_c("span", {
+    }), _vm._v(" "), _c("td", [_vm._v("\n                                        " + _vm._s(item.description) + "\n                                    ")]), _vm._v(" "), _c("td", [_c("span", {
       staticClass: "badge badge-dot mr-4"
-    }, [item.status == _vm.status.pending ? _c("i", {
-      staticClass: "bg-warning"
-    }) : _vm._e(), _vm._v(" "), item.status == _vm.status.completed ? _c("i", {
-      staticClass: "bg-success"
-    }) : _vm._e(), _vm._v(" "), item.status == _vm.status.delayed ? _c("i", {
-      staticClass: "bg-danger"
-    }) : _vm._e(), _vm._v(" "), item.status == _vm.status.schedule ? _c("i", {
-      staticClass: "bg-info"
-    }) : _vm._e(), _vm._v(" "), _c("span", {
+    }, [_c("span", {
       staticClass: "status"
     }, [_vm._v(_vm._s(item.status))])])]), _vm._v(" "), _c("td", [_c("div", {
       staticClass: "d-flex align-items-center"
     }, [_c("span", {
       staticClass: "completion mr-2"
-    }, [_vm._v(_vm._s(item.completion) + " %")]), _vm._v(" "), _c("div", [_c("div", {
-      staticClass: "progress"
-    }, [item.status == _vm.status.pending ? _c("div", {
-      staticClass: "progress-bar bg-warning",
-      style: {
-        width: item.completion + "%"
-      },
-      attrs: {
-        role: "progressbar"
-      }
-    }) : _vm._e(), _vm._v(" "), item.status == _vm.status.completed ? _c("div", {
-      staticClass: "progress-bar bg-success",
-      style: {
-        width: item.completion + "%"
-      },
-      attrs: {
-        role: "progressbar"
-      }
-    }) : _vm._e(), _vm._v(" "), item.status == _vm.status.delayed ? _c("div", {
-      staticClass: "progress-bar bg-danger",
-      style: {
-        width: item.completion + "%"
-      },
-      attrs: {
-        role: "progressbar"
-      }
-    }) : _vm._e(), _vm._v(" "), item.status == _vm.status.schedule ? _c("div", {
-      staticClass: "progress-bar bg-info",
-      style: {
-        width: item.completion + "%"
-      },
-      attrs: {
-        role: "progressbar"
-      }
-    }) : _vm._e()])])])]), _vm._v(" "), _c("td", [_c("div", {
+    }, [_vm._v(_vm._s(item.completion) + " %")]), _vm._v(" "), _vm._m(3, true)])]), _vm._v(" "), _c("td", [_c("div", {
       staticClass: "d-flex align-items-center"
     }, [_c("span", {
       staticClass: "completion mr-2"
@@ -304,12 +253,12 @@ var render = function render() {
       staticClass: "btn btn-primary btn-sm",
       on: {
         click: function click($event) {
-          return _vm.editBtn(item.id);
+          return _vm.edit(item.id);
         }
       }
     }, [_c("i", {
       staticClass: "far fa-edit"
-    }), _vm._v(" "), _vm._m(3, true)]), _vm._v(" "), _c("button", {
+    }), _vm._v(" "), _vm._m(4, true)]), _vm._v(" "), _c("button", {
       staticClass: "btn btn-danger btn-sm",
       attrs: {
         href: "#"
@@ -321,8 +270,8 @@ var render = function render() {
       }
     }, [_c("i", {
       staticClass: "fas fa-trash-alt"
-    }), _vm._v(" "), _vm._m(4, true)])])])])])]);
-  }), _vm._v(" "), _vm.dataNotFound ? _c("tbody", [_vm._m(5)]) : _vm._e()], 2)])])])])]), _vm._v(" "), _c("vs-dialog", {
+    }), _vm._v(" "), _vm._m(5, true)])])])])])]);
+  }), _vm._v(" "), _vm.dataNotFound ? _c("tbody", [_vm._m(6)]) : _vm._e()], 2)])])])])]), _vm._v(" "), _c("vs-dialog", {
     attrs: {
       "prevent-close": "",
       blur: ""
@@ -332,16 +281,16 @@ var render = function render() {
       fn: function fn() {
         return [_c("h4", {
           staticClass: "not-margin"
-        }, [_vm._v("\n                Add New "), _c("b", [_vm._v("Project")])])];
+        }, [_vm._v("\n                    Add New "), _c("b", [_vm._v("Project")])])];
       },
       proxy: true
     }]),
     model: {
-      value: _vm.addProjectModel,
+      value: _vm.createForm,
       callback: function callback($$v) {
-        _vm.addProjectModel = $$v;
+        _vm.createForm = $$v;
       },
-      expression: "addProjectModel"
+      expression: "createForm"
     }
   }, [_vm._v(" "), _c("form", {
     ref: "resetForm",
@@ -351,83 +300,57 @@ var render = function render() {
     on: {
       submit: function submit($event) {
         $event.preventDefault();
-        return _vm.addProject();
+        return _vm.createOrUpdate();
       }
     }
   }, [_c("div", {
     staticClass: "form-group"
   }, [_c("label", {
     staticClass: "form-control-label"
-  }, [_vm._v("Name Of Project")]), _vm._v(" "), _c("input", {
+  }, [_vm._v("Name")]), _vm._v(" "), _c("input", {
     directives: [{
       name: "model",
       rawName: "v-model",
-      value: _vm.addPostData.name,
-      expression: "addPostData.name"
+      value: _vm.project.name,
+      expression: "project.name"
     }],
     staticClass: "form-control",
     attrs: {
       placeholder: "Name"
     },
     domProps: {
-      value: _vm.addPostData.name
+      value: _vm.project.name
     },
     on: {
       input: function input($event) {
         if ($event.target.composing) return;
 
-        _vm.$set(_vm.addPostData, "name", $event.target.value);
+        _vm.$set(_vm.project, "name", $event.target.value);
       }
     }
   })]), _vm._v(" "), _c("div", {
-    staticClass: "form-group mt--3"
+    staticClass: "form-group"
   }, [_c("label", {
     staticClass: "form-control-label"
-  }, [_vm._v("Budget")]), _vm._v(" "), _c("input", {
+  }, [_vm._v("Description")]), _vm._v(" "), _c("input", {
     directives: [{
       name: "model",
       rawName: "v-model",
-      value: _vm.addPostData.budget,
-      expression: "addPostData.budget"
+      value: _vm.project.description,
+      expression: "project.description"
     }],
     staticClass: "form-control",
     attrs: {
-      type: "number",
-      placeholder: "Budget"
+      placeholder: "Description"
     },
     domProps: {
-      value: _vm.addPostData.budget
+      value: _vm.project.description
     },
     on: {
       input: function input($event) {
         if ($event.target.composing) return;
 
-        _vm.$set(_vm.addPostData, "budget", $event.target.value);
-      }
-    }
-  })]), _vm._v(" "), _c("div", {
-    staticClass: "form-group mt--3"
-  }, [_c("label", {
-    staticClass: "form-control-label"
-  }, [_vm._v("Responsible User")]), _vm._v(" "), _c("input", {
-    directives: [{
-      name: "model",
-      rawName: "v-model",
-      value: _vm.addPostData.responsible_user,
-      expression: "addPostData.responsible_user"
-    }],
-    staticClass: "form-control",
-    attrs: {
-      placeholder: "Responsible User"
-    },
-    domProps: {
-      value: _vm.addPostData.responsible_user
-    },
-    on: {
-      input: function input($event) {
-        if ($event.target.composing) return;
-
-        _vm.$set(_vm.addPostData, "responsible_user", $event.target.value);
+        _vm.$set(_vm.project, "description", $event.target.value);
       }
     }
   })]), _vm._v(" "), _c("div", {
@@ -435,240 +358,73 @@ var render = function render() {
   }, [_c("label", {
     staticClass: "form-control-label"
   }, [_vm._v("Status")]), _vm._v(" "), _c("select", {
-    staticClass: "form-control",
-    on: {
-      change: function change($event) {
-        return _vm.onChangeStatus($event);
-      }
-    }
-  }, [_c("option", {
-    attrs: {
-      value: "0"
-    }
-  }, [_vm._v("Select Status")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "PENDING"
-    }
-  }, [_vm._v("Pending")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "COMPLETED"
-    }
-  }, [_vm._v("Completed")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "SCHEDULE"
-    }
-  }, [_vm._v("On Schedule")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "DELAYED"
-    }
-  }, [_vm._v("Delayed")])])]), _vm._v(" "), _c("div", {
-    staticClass: "form-group mt--3"
-  }, [_c("label", {
-    staticClass: "form-control-label"
-  }, [_vm._v("Completion")]), _vm._v(" "), _c("input", {
     directives: [{
       name: "model",
       rawName: "v-model",
-      value: _vm.addPostData.completion,
-      expression: "addPostData.completion"
+      value: _vm.project.status,
+      expression: "project.status"
     }],
-    staticClass: "form-control",
-    attrs: {
-      type: "number",
-      max: "100",
-      placeholder: "50"
-    },
-    domProps: {
-      value: _vm.addPostData.completion
-    },
-    on: {
-      input: function input($event) {
-        if ($event.target.composing) return;
-
-        _vm.$set(_vm.addPostData, "completion", $event.target.value);
-      }
-    }
-  })]), _vm._v(" "), _c("div", {
-    staticClass: "footer-dialog text-center"
-  }, [_c("button", {
-    staticClass: "btn btn-primary",
-    attrs: {
-      type: "submit"
-    }
-  }, [_vm._v("Add New Project")])])])]), _vm._v(" "), _c("vs-dialog", {
-    attrs: {
-      "prevent-close": "",
-      blur: ""
-    },
-    scopedSlots: _vm._u([{
-      key: "header",
-      fn: function fn() {
-        return [_c("h4", {
-          staticClass: "not-margin"
-        }, [_vm._v("\n                Add New "), _c("b", [_vm._v("Project")])])];
-      },
-      proxy: true
-    }]),
-    model: {
-      value: _vm.editProjectModel,
-      callback: function callback($$v) {
-        _vm.editProjectModel = $$v;
-      },
-      expression: "editProjectModel"
-    }
-  }, [_vm._v(" "), _c("form", {
-    attrs: {
-      id: "editProjectForm"
-    },
-    on: {
-      submit: function submit($event) {
-        $event.preventDefault();
-        return _vm.updateProject();
-      }
-    }
-  }, [_c("div", {
-    staticClass: "form-group"
-  }, [_c("label", {
-    staticClass: "form-control-label"
-  }, [_vm._v("Name Of Project")]), _vm._v(" "), _c("input", {
-    directives: [{
-      name: "model",
-      rawName: "v-model",
-      value: _vm.editPostData.name,
-      expression: "editPostData.name"
-    }],
-    staticClass: "form-control",
-    attrs: {
-      placeholder: "Name"
-    },
-    domProps: {
-      value: _vm.editPostData.name
-    },
-    on: {
-      input: function input($event) {
-        if ($event.target.composing) return;
-
-        _vm.$set(_vm.editPostData, "name", $event.target.value);
-      }
-    }
-  })]), _vm._v(" "), _c("div", {
-    staticClass: "form-group mt--3"
-  }, [_c("label", {
-    staticClass: "form-control-label"
-  }, [_vm._v("Budget")]), _vm._v(" "), _c("input", {
-    directives: [{
-      name: "model",
-      rawName: "v-model",
-      value: _vm.editPostData.budget,
-      expression: "editPostData.budget"
-    }],
-    staticClass: "form-control",
-    attrs: {
-      type: "number",
-      placeholder: "Budget"
-    },
-    domProps: {
-      value: _vm.editPostData.budget
-    },
-    on: {
-      input: function input($event) {
-        if ($event.target.composing) return;
-
-        _vm.$set(_vm.editPostData, "budget", $event.target.value);
-      }
-    }
-  })]), _vm._v(" "), _c("div", {
-    staticClass: "form-group mt--3"
-  }, [_c("label", {
-    staticClass: "form-control-label"
-  }, [_vm._v("Responsible User")]), _vm._v(" "), _c("input", {
-    directives: [{
-      name: "model",
-      rawName: "v-model",
-      value: _vm.editPostData.responsible_user,
-      expression: "editPostData.responsible_user"
-    }],
-    staticClass: "form-control",
-    attrs: {
-      placeholder: "Responsible User"
-    },
-    domProps: {
-      value: _vm.editPostData.responsible_user
-    },
-    on: {
-      input: function input($event) {
-        if ($event.target.composing) return;
-
-        _vm.$set(_vm.editPostData, "responsible_user", $event.target.value);
-      }
-    }
-  })]), _vm._v(" "), _c("div", {
-    staticClass: "form-group mt--3"
-  }, [_c("label", {
-    staticClass: "form-control-label"
-  }, [_vm._v("Status")]), _vm._v(" "), _c("select", {
     ref: "getStatus",
     staticClass: "form-control",
     on: {
-      change: function change($event) {
-        return _vm.onEditChangeStatus($event);
+      change: [function ($event) {
+        var $$selectedVal = Array.prototype.filter.call($event.target.options, function (o) {
+          return o.selected;
+        }).map(function (o) {
+          var val = "_value" in o ? o._value : o.value;
+          return val;
+        });
+
+        _vm.$set(_vm.project, "status", $event.target.multiple ? $$selectedVal : $$selectedVal[0]);
+      }, function ($event) {
+        return _vm.onChangeStatus($event);
+      }]
+    }
+  }, _vm._l(_vm.statuses, function (status) {
+    return _c("option", {
+      domProps: {
+        value: status.value
       }
-    }
-  }, [_c("option", {
-    attrs: {
-      value: "0"
-    }
-  }, [_vm._v("Select Status")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "PENDING"
-    }
-  }, [_vm._v("Pending")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "COMPLETED"
-    }
-  }, [_vm._v("Completed")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "SCHEDULE"
-    }
-  }, [_vm._v("On Schedule")]), _vm._v(" "), _c("option", {
-    attrs: {
-      value: "DELAYED"
-    }
-  }, [_vm._v("Delayed")])])]), _vm._v(" "), _c("div", {
+    }, [_vm._v("\n                            " + _vm._s(status.label) + "\n                        ")]);
+  }), 0)]), _vm._v(" "), _c("div", {
     staticClass: "form-group mt--3"
   }, [_c("label", {
     staticClass: "form-control-label"
-  }, [_vm._v("Completion")]), _vm._v(" "), _c("input", {
+  }, [_vm._v("Duration")]), _vm._v(" "), _c("input", {
     directives: [{
       name: "model",
       rawName: "v-model",
-      value: _vm.editPostData.completion,
-      expression: "editPostData.completion"
+      value: _vm.project.duration,
+      expression: "project.duration"
     }],
     staticClass: "form-control",
     attrs: {
-      type: "number",
-      max: "100",
-      placeholder: "50"
+      placeholder: "due date",
+      type: "date"
     },
     domProps: {
-      value: _vm.editPostData.completion
+      value: _vm.project.duration
     },
     on: {
       input: function input($event) {
         if ($event.target.composing) return;
 
-        _vm.$set(_vm.editPostData, "completion", $event.target.value);
+        _vm.$set(_vm.project, "duration", $event.target.value);
       }
     }
   })]), _vm._v(" "), _c("div", {
     staticClass: "footer-dialog text-center"
-  }, [_c("button", {
+  }, [!_vm.project.id ? _c("button", {
     staticClass: "btn btn-primary",
     attrs: {
       type: "submit"
     }
-  }, [_vm._v("Update Project")])])])]), _vm._v(" "), _c("vs-dialog", {
+  }, [_vm._v("Add New Project")]) : _c("button", {
+    staticClass: "btn btn-primary",
+    attrs: {
+      type: "submit"
+    }
+  }, [_vm._v("Edit Project")])])])]), _vm._v(" "), _c("vs-dialog", {
     attrs: {
       width: "550px",
       "not-center": ""
@@ -693,14 +449,14 @@ var render = function render() {
               return _vm.deleteProject();
             }
           }
-        }, [_vm._v("\n                    Ok\n                ")]), _vm._v(" "), _c("button", {
+        }, [_vm._v("\n                        Ok\n                    ")]), _vm._v(" "), _c("button", {
           staticClass: "btn btn-light",
           on: {
             click: function click($event) {
               _vm.deleteDialog = false;
             }
           }
-        }, [_vm._v("\n                    Cancel\n                ")])])];
+        }, [_vm._v("\n                        Cancel\n                    ")])])];
       },
       proxy: true
     }]),
@@ -749,7 +505,7 @@ var staticRenderFns = [function () {
     attrs: {
       scope: "col"
     }
-  }, [_vm._v("Project")]), _vm._v(" "), _c("th", {
+  }, [_vm._v("Name")]), _vm._v(" "), _c("th", {
     staticClass: "sort",
     attrs: {
       scope: "col"
@@ -784,6 +540,13 @@ var staticRenderFns = [function () {
   var _vm = this,
       _c = _vm._self._c;
 
+  return _c("div", [_c("div", {
+    staticClass: "progress"
+  })]);
+}, function () {
+  var _vm = this,
+      _c = _vm._self._c;
+
   return _c("span", [_c("strong", [_vm._v("Edit")])]);
 }, function () {
   var _vm = this,
@@ -807,21 +570,21 @@ render._withStripped = true;
 
 /***/ }),
 
-/***/ "./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css&":
-/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css& ***!
-  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css&":
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css& ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
 /***/ ((module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/laravel-mix/node_modules/css-loader/dist/runtime/api.js */ "./node_modules/laravel-mix/node_modules/css-loader/dist/runtime/api.js");
-/* harmony import */ var _node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
 // Imports
 
-var ___CSS_LOADER_EXPORT___ = _node_modules_laravel_mix_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
 ___CSS_LOADER_EXPORT___.push([module.id, "\n.btn i:not(:last-child), .btn svg:not(:last-child) {\n    margin-right: unset;\n}\n", ""]);
 // Exports
@@ -830,10 +593,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, "\n.btn i:not(:last-child), .btn svg:no
 
 /***/ }),
 
-/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css&":
-/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css& ***!
-  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css&":
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css& ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -842,7 +605,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
 /* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Project_vue_vue_type_style_index_0_id_07b994e8_lang_css___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/lib/index.js??vue-loader-options!./Project.vue?vue&type=style&index=0&id=07b994e8&lang=css& */ "./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css&");
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Project_vue_vue_type_style_index_0_id_07b994e8_lang_css___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/lib/index.js??vue-loader-options!./Project.vue?vue&type=style&index=0&id=07b994e8&lang=css& */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css&");
 
             
 
@@ -851,11 +614,11 @@ var options = {};
 options.insert = "head";
 options.singleton = false;
 
-var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Project_vue_vue_type_style_index_0_id_07b994e8_lang_css___WEBPACK_IMPORTED_MODULE_1__["default"], options);
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Project_vue_vue_type_style_index_0_id_07b994e8_lang_css___WEBPACK_IMPORTED_MODULE_1__["default"], options);
 
 
 
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Project_vue_vue_type_style_index_0_id_07b994e8_lang_css___WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Project_vue_vue_type_style_index_0_id_07b994e8_lang_css___WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ }),
 
@@ -937,7 +700,7 @@ __webpack_require__.r(__webpack_exports__);
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_laravel_mix_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Project_vue_vue_type_style_index_0_id_07b994e8_lang_css___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../node_modules/style-loader/dist/cjs.js!../../../../node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/lib/index.js??vue-loader-options!./Project.vue?vue&type=style&index=0&id=07b994e8&lang=css& */ "./node_modules/style-loader/dist/cjs.js!./node_modules/laravel-mix/node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css&");
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_lib_index_js_vue_loader_options_Project_vue_vue_type_style_index_0_id_07b994e8_lang_css___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../node_modules/style-loader/dist/cjs.js!../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../node_modules/vue-loader/lib/index.js??vue-loader-options!./Project.vue?vue&type=style&index=0&id=07b994e8&lang=css& */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./resources/js/components/Project/Project.vue?vue&type=style&index=0&id=07b994e8&lang=css&");
 
 
 /***/ })

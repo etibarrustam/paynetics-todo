@@ -13,17 +13,30 @@ enum ProjectStatus: int
     case DONE = 3;
 
     /**
-     * Get status label by id.
-     * @param ProjectStatus $value
+     * Get status label.
      * @return string
      */
-    public static function getLabel(self $value): string
+    public function getLabel(): string
     {
-        return match ($value) {
-            self::NEW => 'New',
-            self::PENDING => 'Pending',
-            self::FAILED => 'Failed',
-            self::DONE => 'Done',
+        return match ($this) {
+            self::NEW => __("statuses.project.new"),
+            self::PENDING => __("statuses.project.pending"),
+            self::FAILED => __("statuses.project.failed"),
+            self::DONE => __("statuses.project.done"),
         };
+    }
+
+    /**
+     * Get cases as array.
+     * @return ProjectStatus[]
+     */
+    public static function toArray(): array
+    {
+        return [
+            self::NEW->value,
+            self::PENDING->value,
+            self::FAILED->value,
+            self::DONE->value,
+        ];
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Repositories\Repository;
 use App\Http\Requests\Project\ProjectRequest;
 use App\Http\Resources\Project\ProjectResource;
 use App\Http\Resources\Project\ProjectResourceCollection;
@@ -12,6 +11,7 @@ use App\Http\Responses\ApiResponse;
 use App\Http\Responses\HasJsonResponse;
 use App\Models\Project\Project;
 use App\Models\Project\ProjectStatus;
+use App\Services\ProjectService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Throwable;
 
@@ -20,26 +20,23 @@ class ProjectController extends Controller
     use HasJsonResponse;
 
     /**
-     * @var Repository
+     * Get all data from Project.
+     * @return ApiResponse
      */
-    private Repository $repository;
-
-    public function __construct()
-    {
-        $this->repository = Repository::make(Project::class);
-    }
-
     public function all(): ApiResponse
     {
-        return $this->successResponse(
-            ProjectResourceCollection::make($this->repository->all())
-        );
+        return $this->successResponse(ProjectResourceCollection::make(Project::all()));
     }
 
+    /**
+     * Find the Project by id.
+     * @param int $id
+     * @return ApiResponse
+     */
     public function getById(int $id): ApiResponse
     {
         try {
-            $project = $this->repository->getById($id);
+            $project = Project::findOrFail($id);
         } catch (ModelNotFoundException $e) {
             return $this->failResponse(['project' => __('exceptions.entity_not_found', ['entity' => 'Project'])]);
         } catch (Throwable $e) {
@@ -49,15 +46,25 @@ class ProjectController extends Controller
         return $this->successResponse(ProjectResource::make($project));
     }
 
+    /**
+     * Get all Project statuses.
+     * @return ApiResponse
+     */
     public function getStatuses(): ApiResponse
     {
         return $this->successResponse(ProjectStatusResourceCollection::make(ProjectStatus::cases()));
     }
 
-    public function store(ProjectRequest $request): ApiResponse
+    /**
+     * Create new Project.
+     * @param ProjectRequest $request
+     * @param ProjectService $service
+     * @return ApiResponse
+     */
+    public function store(ProjectRequest $request, ProjectService $service): ApiResponse
     {
         try {
-            $project = $this->repository->create($request->safe()->toArray());
+            $project = $service->create($request->safe()->toArray());
         } catch (Throwable $e) {
             return $this->serviceUnavailable();
         }
@@ -65,10 +72,17 @@ class ProjectController extends Controller
         return $this->successResponse(ProjectResource::make($project));
     }
 
+    /**
+     * Update Project via given ID.
+     * @param int $id
+     * @param ProjectRequest $request
+     * @return ApiResponse
+     */
     public function update(int $id, ProjectRequest $request): ApiResponse
     {
         try {
-            $project = $this->repository->update($id, $request->safe());
+            $project = Project::findOrFail($id);
+            $project->fill($request->safe()->toArray())->save();
         } catch (ModelNotFoundException $e) {
             return $this->failResponse(['project' => __('exceptions.entity_not_found', ['entity' => 'Project'])]);
         } catch (Throwable $e) {
@@ -78,16 +92,21 @@ class ProjectController extends Controller
         return $this->successResponse(ProjectResource::make($project));
     }
 
+    /**
+     * Delete Project via given ID.
+     * @param int $id
+     * @return ApiResponse
+     */
     public function delete(int $id): ApiResponse
     {
         try {
-            $this->repository->delete($id);
+            Project::findOrFail($id)->delete();
         } catch (ModelNotFoundException $e) {
             return $this->failResponse(['project' => __('exceptions.entity_not_found', ['entity' => 'Project'])]);
         } catch (Throwable $e) {
             return $this->serviceUnavailable();
         }
 
-        return $this->successResponse(ProjectResource::make());
+        return $this->successResponse();
     }
 }

@@ -23,6 +23,11 @@ window.axios = require('axios');
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
+let token = JSON.parse( localStorage.getItem('token') );
+if( token ){
+    window.axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
+}
+
 /**
  * Echo exposes an expressive API for subscribing to channels and listening
  * for events that are broadcast by Laravel. Echo and event broadcasting

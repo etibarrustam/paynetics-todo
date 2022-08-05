@@ -3,51 +3,112 @@
 namespace App\Models\Project;
 
 use App\Models\Company\Company;
-use App\Models\HasOwner;
-use App\Models\Task;
+use App\Models\Task\Task;
+use App\Models\Traits\DefaultDateTimeFormat;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * App\Models\Project\Project
+ *
+ * @property int $id
+ * @property int|null $user_id
+ * @property int $company_id
+ * @property string $name
+ * @property string|null $description
+ * @property int $status
+ * @property string|null $duration
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read Company $company
+ * @property-read \Illuminate\Database\Eloquent\Collection|User[] $employees
+ * @property-read int|null $employees_count
+ * @property-read string $status_label
+ * @property-read User|null $owner
+ * @method static \Database\Factories\Project\ProjectFactory factory(...$parameters)
+ * @method static \Illuminate\Database\Eloquent\Builder|Project newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Project newQuery()
+ * @method static \Illuminate\Database\Query\Builder|Project onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder|Project query()
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereCompanyId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereDuration($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereUserId($value)
+ * @method static \Illuminate\Database\Query\Builder|Project withTrashed()
+ * @method static \Illuminate\Database\Query\Builder|Project withoutTrashed()
+ * @mixin \Eloquent
+ * @property-read \Illuminate\Database\Eloquent\Collection|Task[] $tasks
+ * @property-read int|null $tasks_count
+ * @property-read Model|\Eloquent $projectable
+ * @property int $projectable_id
+ * @property string $projectable_type
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereProjectableId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Project whereProjectableType($value)
+ */
 class Project extends Model
 {
     use HasFactory;
     use SoftDeletes;
-    use HasOwner;
+    use DefaultDateTimeFormat;
 
+    /**
+     * @inheritdoc
+     */
     protected $fillable = [
         'name',
         'description',
         'status',
+        'duration',
+        'projectable_id',
+        'projectable_type',
+    ];
+
+    /**
+     * @inheritdoc
+     */
+    protected $dates = [
+        'created_at',
+        'updated_at',
         'duration'
     ];
 
+    /**
+     * Get related tasks.
+     * @return HasMany
+     */
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
     }
 
-    public function getStatusLabelAttribute(): string
-    {
-        return ProjectStatus::getLabel($this->status);
-    }
-
+    /**
+     * Get related employees.
+     * @return BelongsToMany
+     */
     public function employees(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'project_employees');
     }
 
-    public function owner(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
 
-    public function company()
+    /**
+     * Get the related parent model. (User, Company)
+     * @return MorphTo
+     */
+    public function projectable(): MorphTo
     {
-        return $this->belongsTo(Company::class);
+        return $this->morphTo();
     }
 }

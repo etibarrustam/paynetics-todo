@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\V1\AuthController;
 use App\Http\Controllers\API\V1\ProjectController;
+use App\Http\Controllers\API\V1\ProjectStatusController;
 use App\Http\Controllers\API\V1\TaskController;
 use App\Http\Controllers\API\V1\TestController;
 use App\Models\UserRole;
@@ -35,11 +36,14 @@ Route::group(['middleware' => 'auth:sanctum'], static function () {
         Route::get('/{id}', [ProjectController::class, 'getById'])->name('get-by-id')->where(['id' => '[0-9]+']);
         Route::post('/', [ProjectController::class, 'store'])->name('store');
         Route::put('/{id}', [ProjectController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ProjectController::class, 'delete'])->name('delete');
     });
     Route::group(['as' => 'tasks.', 'prefix' => 'tasks'], static function () {
+        Route::get('statuses', [TaskController::class, 'getStatuses'])->name('statuses');
         Route::get('/', [TaskController::class, 'all'])->name('all');
         Route::get('/{id}', [TaskController::class, 'getById'])->name('get-by-id')->where(['id' => '[0-9]+']);
         Route::post('/', [TaskController::class, 'store'])->name('store');
         Route::put('/{id}', [TaskController::class, 'update'])->name('update');
+        Route::delete('/{id}', [TaskController::class, 'delete'])->name('delete');
     });
 });

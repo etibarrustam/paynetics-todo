@@ -26,6 +26,11 @@ class RolePermissionsSeeder extends Seeder
         }
     }
 
+    /**
+     * Create Permissions for each Role.
+     * @param array $data
+     * @return array
+     */
     protected function createPermissions(array $data): array
     {
         $permissions = [];

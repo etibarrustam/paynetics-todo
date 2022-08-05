@@ -8,5 +8,8 @@ use Spatie\FlareClient\Api;
 
 class ProjectStatusResourceCollection extends ResourceCollection
 {
+    /**
+     * @inheritdoc
+     */
     public $resource = ProjectStatusResource::class;
 }

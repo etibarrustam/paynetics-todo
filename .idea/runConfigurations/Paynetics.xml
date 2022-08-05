@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Paynetics" type="PHPUnitRunConfigurationType" factoryName="PHPUnit">
+    <CommandLine>
+      <PhpTestInterpreterSettings>
+        <option name="interpreterName" value="php" />
+      </PhpTestInterpreterSettings>
+    </CommandLine>
+    <TestRunner class="Tests" directory="$PROJECT_DIR$/src/tests" file="$PROJECT_DIR$/src/tests/Feature/Controllers/ProjectControllerTest.php" method="testGetAllData" />
+    <method v="2" />
+  </configuration>
+</component>
