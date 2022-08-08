@@ -7,7 +7,7 @@
                     <div class="row justify-content-center">
                         <div class="col-xl-5 col-lg-6 col-md-8 px-5">
                             <h1 class="text-white">Welcome!</h1>
-                            <p class="text-lead text-white">Login Your account in your project for free.</p>
+                            <p class="text-lead text-white">Login Your account.</p>
                         </div>
                     </div>
                 </div>
@@ -52,15 +52,15 @@
                             </form>
                         </div>
                     </div>
-                    <div class="row mt-3">
-                        <div class="col">
-                            <router-link class="text-light" to="/forgot-password"><small>Forgot password?</small></router-link>
-                        </div>
+<!--                    <div class="row mt-3">-->
+<!--                        <div class="col">-->
+<!--                            <router-link class="text-light" to="/forgot-password"><small>Forgot password?</small></router-link>-->
+<!--                        </div>-->
                         <div class="col text-center">
                             <router-link class="text-light" to="/register"><small>Create new account</small></router-link>
                             <a href="#" ></a>
                         </div>
-                    </div>
+<!--                    </div>-->
                 </div>
             </div>
         </div>
@@ -72,8 +72,8 @@ export default {
     data(){
         return{
             loginData:{
-                email: 'paynetics1@gmail.com',
-                password: '1!Paynetics@6'
+                email: 'client1@gmail.com',
+                password: 'ClientPassword!1'
             }
         }
     },
@@ -82,24 +82,22 @@ export default {
             let loading = this.block('loginLoader');
             this.axios.post('api/v1/login',this.loginData)
                 .then(response => {
-                    console.log(response.data);
+                    loading.close();
+
                     if (response.data.code === 1){
                         let data = response.data.data;
-                        loading.close()
                         axios.defaults.headers.common['Authorization'] = 'Bearer ' + data.token;
 
                         localStorage.setItem( 'token', JSON.stringify(data.token) );
 
-                        this.$router.push('dashboard');
-                    }else {
-                        this.errorNotification(response.data.message)
-                        loading.close()
+                        return this.$router.push('dashboard');
                     }
+
+                    this.errorNotification(response.data.validation_errors);
                 })
                 .catch(error =>{
-                    console.log(error);
-                    // this.errorNotification(error.response.data.errors)
-                    loading.close()
+                    loading.close();
+                    this.errorNotification(error.message);
                 });
         }
     },

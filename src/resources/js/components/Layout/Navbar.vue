@@ -55,25 +55,25 @@ export default {
     data(){
         return{
             profileInfo:{
-                image : null,
                 name : null
             },
-            profile_baseURL : 'assets/img/profile/',
         }
     },
     methods:{
         getProfileInfo(){
-            let Loading = this.block("profileInfoLoading");
-            this.axios.get("/api/v1/profile/info")
+            this.axios.get("/api/v1/user/data")
                 .then(response =>{
-                    let data = response.data.data;
-                    this.profileInfo.name = data.name ? data.name : "----- ------";
-                    this.profileInfo.image = data.profile_pic ? this.profile_baseURL+data.profile_pic : this.profile_baseURL + "default.jpg";
-                    Loading.close()
+                    if (response.data.code === 1) {
+                        let data = response.data.data;
+                        this.profileInfo.name = data.name ? data.name : "----- ------";
+
+                        return;
+                    }
+
+                    this.errorNotification(response.data.validation_errors);
                 })
                 .catch(error =>{
-                    console.log(error.response.data)
-                    Loading.close()
+                    this.errorNotification(error.message);
                 })
         },
     },

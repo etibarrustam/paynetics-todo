@@ -8,6 +8,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ApiResponse extends JsonResponse
 {
@@ -20,13 +21,19 @@ class ApiResponse extends JsonResponse
      */
     public function __construct(JsonResource $resource = null, array $headers = [], int $options = 0)
     {
+        $data = [
+            'data' => $resource,
+            'code' => ApiCode::SUCCESS,
+            'validation_errors' => (object) [],
+        ];
+
+        if ($resource && $resource->resource instanceof LengthAwarePaginator) {
+            $data = array_merge($data, $resource->resource->toArray());
+        }
+
         $this->encodingOptions = $options;
 
-        parent::__construct([
-            'code' => ApiCode::SUCCESS,
-            'data' => $resource,
-            'validation_errors' => (object) [],
-        ], Response::HTTP_OK, $headers);
+        parent::__construct($data, Response::HTTP_OK, $headers);
     }
 
     /**

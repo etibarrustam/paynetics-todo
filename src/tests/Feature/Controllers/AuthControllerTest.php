@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Controllers;
 
+use App\Models\Enums\UserRole;
 use App\Models\User;
-use App\Models\UserRole;
 use Hash;
 use Tests\Feature\ApiTestCase;
 
@@ -15,26 +15,24 @@ class AuthControllerTest extends ApiTestCase
      */
     public function testRegisterUser()
     {
-        foreach (UserRole::cases() as $case) {
-            $user = User::factory()->create();
-            $userRequestData = $this->userRequestData();
+        $user = User::factory()->create();
+        $userRequestData = $this->userRequestData();
 
-            $response = $this->postJson(
-                route('api.v1.auth.register', ['type' => $case->value]),
-                $userRequestData
+        $response = $this->postJson(
+            route('api.v1.auth.register', ['type' => UserRole::USER->value]),
+            $userRequestData
+        );
+
+        $content = (array)$response->json('data');
+        $registeredUser = User::whereEmail($content['email'])->firstOrFail();
+
+        $this->assertContains(UserRole::USER->value, $registeredUser->getRoleNames());
+
+        $response->assertOk()
+            ->assertJsonStructure(array_keys($this->getSuccessResponse()))
+            ->assertJsonStructure(
+                ['data' => array_keys($user->only('email', 'name', 'created_at'))]
             );
-
-            $content = (array)$response->json('data');
-            $registeredUser = User::whereEmail($content['email'])->firstOrFail();
-
-            $this->assertContains($case->value, $registeredUser->getRoleNames());
-
-            $response->assertOk()
-                ->assertJsonStructure(array_keys($this->getSuccessResponse()))
-                ->assertJsonStructure(
-                    ['data' => array_keys($user->only('email', 'name', 'created_at'))]
-                );
-        }
     }
 
     /**
@@ -65,7 +63,7 @@ class AuthControllerTest extends ApiTestCase
      * Generate fake User data.
      * @return array
      */
-    protected function userRequestData():array
+    protected function userRequestData(): array
     {
         $password = "1test@User";
 

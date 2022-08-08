@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\Task;
 
-use App\Models\Task\TaskStatus;
+use App\Models\Enums\TaskStatus;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class TaskStatusResource extends JsonResource

@@ -24,6 +24,7 @@ services:
     ports:
       - 5432:5432
     environment:
+      ## TODO add env variables here
       POSTGRES_DB: paynetics_db
       POSTGRES_USER: paynetics_user
       POSTGRES_PASSWORD: paynetics

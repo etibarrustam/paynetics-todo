@@ -40,9 +40,17 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'web_admin' => [
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
         'api' => [
             'driver' => 'sanctum',
             'provider' => 'users',
+        ],
+        'api_admin' => [
+            'driver' => 'sanctum',
+            'provider' => 'admins',
         ]
     ],
 

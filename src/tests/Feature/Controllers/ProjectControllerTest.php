@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Controllers;
 
+use App\Models\Enums\UserPermission;
+use App\Models\Enums\UserRole;
 use App\Models\Project\Project;
-use App\Models\Project\ProjectStatus;
-use App\Models\UserRole;
 use Carbon\Carbon;
 use Tests\Feature\ApiTestCase;
 
@@ -20,7 +20,7 @@ class ProjectControllerTest extends ApiTestCase
         Project::truncate();
 
         $this->seedRoleAndPermissions();
-        $this->loginUser(UserRole::CLIENT);
+        $this->loginUser(UserRole::USER);
     }
 
     /**
@@ -29,15 +29,21 @@ class ProjectControllerTest extends ApiTestCase
      */
     public function testGetAllData()
     {
-        $projects = Project::factory()->count(10)->create();
+        $limit = 10;
+        $perPage = 10;
+        $projects = Project::factory()->withUser($this->user)->count($limit)->create();
         $projects = $projects->map(fn($project) => $this->projectToArray($project));
 
         $this->getJson(
-            route('api.v1.projects.all'),
+            route('api.v1.projects.all', ['per_page' => $perPage]),
             ['Accept' => 'application/json']
-        )
-            ->assertOk()
-            ->assertJson($this->getSuccessResponse($projects->toArray()));
+        )->assertOk()
+            ->assertJson($this->getSuccessResponsePagination(
+                $projects->toArray(),
+                route('api.v1.projects.all'),
+                $limit,
+                $perPage
+            ));
     }
 
     /**
@@ -46,7 +52,7 @@ class ProjectControllerTest extends ApiTestCase
      */
     public function testFindProjectByID()
     {
-        $project = Project::factory()->create();
+        $project = Project::factory()->withUser($this->user)->create();
 
         $this->getJson(
             route('api.v1.projects.get-by-id', ['id' => $project['id']]),
@@ -62,7 +68,7 @@ class ProjectControllerTest extends ApiTestCase
      */
     public function testCreateNewProject()
     {
-        $projectData = Project::factory()->make();
+        $projectData = Project::factory()->withUser($this->user)->make();
 
         $this->postJson(
             route('api.v1.projects.store'),
@@ -78,7 +84,7 @@ class ProjectControllerTest extends ApiTestCase
      */
     public function testDeleteProject()
     {
-        $project = Project::factory()->create();
+        $project = Project::factory()->withUser($this->user)->create();
 
         $this->deleteJson(
             route('api.v1.projects.delete', ['id' => $project->id])
@@ -101,7 +107,7 @@ class ProjectControllerTest extends ApiTestCase
             'name' => $project->name,
             'status' => $project->status->value,
             'description' => $project->description,
-            'created_at' => Carbon::create($project->created_at)->toJSON(),
+            'created_at' => Carbon::create($project->created_at)->toDateString(),
         ];
     }
 }

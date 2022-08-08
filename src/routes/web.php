@@ -14,6 +14,8 @@ use Symfony\Component\HttpFoundation\Response;
 | contains the "web" middleware group. Now create something great!
 |
 */
+Route::get('/test', [\App\Http\Controllers\API\V1\TestController::class, 'basicResponse']);
 
-Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-Route::any('/{any}', static fn () => redirect()->route('dashboard'));
+Route::any('/{any}', [DashboardController::class, 'index'])
+    ->name('dashboard')->where('any', '.*');
+//Route::any('/{any}', static fn () => redirect()->route('dashboard'));

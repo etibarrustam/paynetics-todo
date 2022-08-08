@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Project\ProjectStatus;
+use App\Models\Enums\ProjectStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -16,11 +16,15 @@ return new class extends Migration
     {
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('projectable_id');
+            $table->foreignId('user_id')->nullable()
+                ->references('id')
+                ->on('users')
+                ->onDelete('cascade');
             $table->tinyInteger('status')->default(ProjectStatus::NEW->value);
-            $table->string('projectable_type');
             $table->string('name');
             $table->text('description')->nullable();
+            $table->string('company_name');
+            $table->string('company_address')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

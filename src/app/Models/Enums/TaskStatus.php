@@ -1,12 +1,16 @@
 <?php
 
-namespace App\Models\Task;
+namespace App\Models\Enums;
+
+use App\Models\Traits\ArrayableEnum;
 
 /**
  * Task statuses.
  */
 enum TaskStatus: int
 {
+    use ArrayableEnum;
+
     case TODO = 0;
     case IN_PROGRESS = 1;
     case REVIEW = 2;
@@ -24,19 +28,5 @@ enum TaskStatus: int
             self::REVIEW => __("statuses.task.review"),
             self::DONE => __("statuses.task.done"),
         };
-    }
-
-    /**
-     * Get cases as array.
-     * @return TaskStatus[]
-     */
-    public static function toArray(): array
-    {
-        return [
-            self::TODO->value,
-            self::IN_PROGRESS->value,
-            self::REVIEW->value,
-            self::DONE->value,
-        ];
     }
 }

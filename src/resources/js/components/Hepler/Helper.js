@@ -16,8 +16,25 @@ const Helpers = {
                 text: message,
             });
         },
-        errorNotification(message) {
-            const noti = this.$vs.notification({
+        errorNotification(messages) {
+            if (typeof messages === 'object') {
+                return Object.keys(messages).forEach((msgKey) => {
+                    messages[msgKey].forEach((msg) => {
+                        this.$vs.notification({
+                            square: true,
+                            flat: true,
+                            progress: 'auto',
+                            color : 'danger',
+                            border : 'danger',
+                            position: 'top-right',
+                            title: 'Error',
+                            text: messages[msgKey],
+                        });
+                    });
+                });
+            }
+
+            this.$vs.notification({
                 square: true,
                 flat: true,
                 progress: 'auto',
@@ -25,7 +42,7 @@ const Helpers = {
                 border : 'danger',
                 position: 'top-right',
                 title: 'Error',
-                text: message,
+                text: messages,
             });
         },
     }

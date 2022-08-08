@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Controllers;
 
+use App\Models\Enums\UserRole;
+use App\Models\Project\Project;
 use App\Models\Task\Task;
-use App\Models\Task\TaskStatus;
-use App\Models\UserRole;
 use Carbon\Carbon;
 use Tests\Feature\ApiTestCase;
 
@@ -20,7 +20,7 @@ class TaskControllerTest extends ApiTestCase
         Task::truncate();
 
         $this->seedRoleAndPermissions();
-        $this->loginUser(UserRole::CLIENT);
+        $this->loginUser(UserRole::USER);
     }
 
     /**
@@ -29,15 +29,24 @@ class TaskControllerTest extends ApiTestCase
      */
     public function testGetAllData()
     {
-        $tasks = Task::factory()->count(10)->create();
+        $limit = 10;
+        $perPage = 10;
+
+        $project = Project::factory()->withUser($this->user)->create();
+        $tasks = Task::factory()->withProject($project)->count(10)->create();
         $tasks = $tasks->map(fn($task) => $this->taskToArray($task));
 
         $this->getJson(
-            route('api.v1.tasks.all'),
+            route('api.v1.tasks.all', ['per_page' => $perPage, 'project_id' => $project->id]),
             ['Accept' => 'application/json']
         )
             ->assertOk()
-            ->assertJson($this->getSuccessResponse($tasks->toArray()));
+            ->assertJson($this->getSuccessResponsePagination(
+                $tasks->toArray(),
+                route('api.v1.tasks.all'),
+                $limit,
+                $perPage
+            ));
     }
 
     /**
@@ -46,7 +55,8 @@ class TaskControllerTest extends ApiTestCase
      */
     public function testFindTaskByID()
     {
-        $task = Task::factory()->create();
+        $project = Project::factory()->withUser($this->user)->create();
+        $task = Task::factory()->withProject($project)->create();
 
         $this->getJson(
             route('api.v1.tasks.get-by-id', ['id' => $task['id']]),
@@ -62,11 +72,12 @@ class TaskControllerTest extends ApiTestCase
      */
     public function testCreateNewTask()
     {
-        $taskData = Task::factory()->make();
+        $project = Project::factory()->withUser($this->user)->create();
+        $taskData = Task::factory()->withProject($project)->make();
 
         $this->postJson(
             route('api.v1.tasks.store'),
-            $taskData->toArray()
+            array_merge($this->taskToArray($taskData), ['project_id' => $project->id])
         )
             ->assertOk()
             ->assertJsonStructure(['data' => array_keys($this->taskToArray($taskData))]);
@@ -78,7 +89,8 @@ class TaskControllerTest extends ApiTestCase
      */
     public function testDeleteTask()
     {
-        $task = Task::factory()->create();
+        $project = Project::factory()->withUser($this->user)->create();
+        $task = Task::factory()->withProject($project)->create();
 
         $this->deleteJson(
             route('api.v1.tasks.delete', ['id' => $task->id])
@@ -97,14 +109,19 @@ class TaskControllerTest extends ApiTestCase
      */
     private function taskToArray(Task $task): array
     {
-        return [
-            'id' => $task->id,
+        $data = [
             'name' => $task->name,
             'description' => $task->description,
             'status' => $task->status->value,
-            'start_at' => Carbon::create($task->start_at)->toJSON(),
-            'end_at' => Carbon::create($task->end_at)->toJSON(),
-            'created_at' => Carbon::create($task->created_at)->toJSON(),
+            'start_at' => Carbon::create($task->start_at)->toDateString(),
+            'end_at' => Carbon::create($task->end_at)->toDateString(),
+            'created_at' => Carbon::create($task->created_at)->toDateString(),
         ];
+
+        if ($task->id) {
+            $data['id'] = $task->id;
+        }
+
+        return $data;
     }
 }

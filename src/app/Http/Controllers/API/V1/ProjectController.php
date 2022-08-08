@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Project\ProjectRequest;
+use App\Http\Requests\Project\ProjectGetRequest;
+use App\Http\Requests\Project\ProjectPostRequest;
 use App\Http\Resources\Project\ProjectResource;
-use App\Http\Resources\Project\ProjectResourceCollection;
-use App\Http\Resources\Project\ProjectStatusResourceCollection;
+use App\Http\Resources\Project\ProjectStatusResource;
 use App\Http\Responses\ApiResponse;
 use App\Http\Responses\HasJsonResponse;
+use App\Models\Enums\ProjectStatus;
 use App\Models\Project\Project;
-use App\Models\Project\ProjectStatus;
 use App\Services\ProjectService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Throwable;
@@ -21,11 +21,13 @@ class ProjectController extends Controller
 
     /**
      * Get all data from Project.
+     * @param ProjectGetRequest $request
      * @return ApiResponse
      */
-    public function all(): ApiResponse
+    public function all(ProjectGetRequest $request): ApiResponse
     {
-        return $this->successResponse(ProjectResourceCollection::make(Project::all()));
+        $project = Project::with('employees')->paginate($request->get('per_page'));
+        return $this->successResponse(ProjectResource::collection($project));
     }
 
     /**
@@ -52,20 +54,21 @@ class ProjectController extends Controller
      */
     public function getStatuses(): ApiResponse
     {
-        return $this->successResponse(ProjectStatusResourceCollection::make(ProjectStatus::cases()));
+        return $this->successResponse(ProjectStatusResource::collection(ProjectStatus::cases()));
     }
 
     /**
      * Create new Project.
-     * @param ProjectRequest $request
+     * @param ProjectPostRequest $request
      * @param ProjectService $service
      * @return ApiResponse
      */
-    public function store(ProjectRequest $request, ProjectService $service): ApiResponse
+    public function store(ProjectPostRequest $request, ProjectService $service): ApiResponse
     {
         try {
             $project = $service->create($request->safe()->toArray());
         } catch (Throwable $e) {
+
             return $this->serviceUnavailable();
         }
 
@@ -75,14 +78,14 @@ class ProjectController extends Controller
     /**
      * Update Project via given ID.
      * @param int $id
-     * @param ProjectRequest $request
+     * @param ProjectPostRequest $request
+     * @param ProjectService $service
      * @return ApiResponse
      */
-    public function update(int $id, ProjectRequest $request): ApiResponse
+    public function update(int $id, ProjectPostRequest $request, ProjectService $service): ApiResponse
     {
         try {
-            $project = Project::findOrFail($id);
-            $project->fill($request->safe()->toArray())->save();
+            $project = $service->update($id, $request->safe()->toArray());
         } catch (ModelNotFoundException $e) {
             return $this->failResponse(['project' => __('exceptions.entity_not_found', ['entity' => 'Project'])]);
         } catch (Throwable $e) {
