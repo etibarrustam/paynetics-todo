@@ -16,12 +16,15 @@ __webpack_require__.r(__webpack_exports__);
   mounted: function mounted() {
     var _this = this;
 
+    localStorage.removeItem('token');
     this.axios.get('api/v1/logout').then(function (response) {
-      if (response.data.status === true) {
-        document.location.href = '/login';
+      if (response.data.code === 1) {
+        return document.location.href = '/login';
       }
+
+      return _this.errorNotification(error.response.validation_errors);
     })["catch"](function (error) {
-      _this.errorNotification(error.response.data.message);
+      _this.errorNotification(error.message);
     });
   }
 });

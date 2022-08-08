@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Project\ProjectStatus;
+use App\Models\Enums\ProjectStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -19,15 +19,12 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()
                 ->references('id')
                 ->on('users')
-                ->onDelete('set null');
-            $table->foreignId('company_id')
-                ->references('id')
-                ->on('companies')
                 ->onDelete('cascade');
+            $table->tinyInteger('status')->default(ProjectStatus::NEW->value);
             $table->string('name');
             $table->text('description')->nullable();
-            $table->tinyInteger('status')->default(ProjectStatus::NEW->value);
-            $table->timestamp('duration')->nullable();
+            $table->string('company_name');
+            $table->string('company_address')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

@@ -16,8 +16,8 @@ __webpack_require__.r(__webpack_exports__);
   data: function data() {
     return {
       loginData: {
-        email: '',
-        password: ''
+        email: 'client1@gmail.com',
+        password: 'ClientPassword!1'
       }
     };
   },
@@ -27,18 +27,20 @@ __webpack_require__.r(__webpack_exports__);
 
       var loading = this.block('loginLoader');
       this.axios.post('api/v1/login', this.loginData).then(function (response) {
-        if (response.data.status === true) {
-          loading.close();
-          window.location.href = '/dashboard';
-        } else {
-          _this.errorNotification(response.data.message);
-
-          loading.close();
-        }
-      })["catch"](function (error) {
-        _this.errorNotification(error.response.data.message);
-
         loading.close();
+
+        if (response.data.code === 1) {
+          var data = response.data.data;
+          axios.defaults.headers.common['Authorization'] = 'Bearer ' + data.token;
+          localStorage.setItem('token', JSON.stringify(data.token));
+          return _this.$router.push('dashboard');
+        }
+
+        _this.errorNotification(response.data.validation_errors);
+      })["catch"](function (error) {
+        loading.close();
+
+        _this.errorNotification(error.message);
       });
     }
   }
@@ -156,15 +158,6 @@ var render = function render() {
       }
     }
   })])]), _vm._v(" "), _vm._m(4)])])]), _vm._v(" "), _c("div", {
-    staticClass: "row mt-3"
-  }, [_c("div", {
-    staticClass: "col"
-  }, [_c("router-link", {
-    staticClass: "text-light",
-    attrs: {
-      to: "/forgot-password"
-    }
-  }, [_c("small", [_vm._v("Forgot password?")])])], 1), _vm._v(" "), _c("div", {
     staticClass: "col text-center"
   }, [_c("router-link", {
     staticClass: "text-light",
@@ -175,7 +168,7 @@ var render = function render() {
     attrs: {
       href: "#"
     }
-  })], 1)])])])])]);
+  })], 1)])])])]);
 };
 
 var staticRenderFns = [function () {
@@ -194,7 +187,7 @@ var staticRenderFns = [function () {
     staticClass: "text-white"
   }, [_vm._v("Welcome!")]), _vm._v(" "), _c("p", {
     staticClass: "text-lead text-white"
-  }, [_vm._v("Login Your account in your project for free.")])])])])]);
+  }, [_vm._v("Login Your account.")])])])])]);
 }, function () {
   var _vm = this,
       _c = _vm._self._c;
@@ -203,7 +196,7 @@ var staticRenderFns = [function () {
     staticClass: "card-header bg-transparent"
   }, [_c("div", {
     staticClass: "text-muted text-center mt-2 h1"
-  }, [_vm._v("\n                            Login\n                        ")])]);
+  }, [_vm._v("\n                                Login\n                            ")])]);
 }, function () {
   var _vm = this,
       _c = _vm._self._c;

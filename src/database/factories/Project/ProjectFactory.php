@@ -2,13 +2,14 @@
 
 namespace Database\Factories\Project;
 
-use App\Models\Company\Company;
-use App\Models\Project\ProjectStatus;
-use Carbon\Carbon;
+use App\Models\Enums\ProjectStatus;
+use App\Models\Enums\UserRole;
+use App\Models\Project\Project;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Project\Project>
+ * @extends Factory<Project>
  */
 class ProjectFactory  extends Factory
 {
@@ -17,26 +18,31 @@ class ProjectFactory  extends Factory
      *
      * @return array<string, mixed>
      */
-    public function definition()
+    public function definition(): array
     {
+        $user = User::factory()->create();
+        $user->assignRole([UserRole::USER->value]);
+        $statuses = ProjectStatus::toArray();
+
         return [
             'name' => fake()->company(),
+            'user_id' => $user,
             'description' => fake()->text(),
-            'status' => ProjectStatus::NEW->value,
-            'duration' => Carbon::now()->addDays(10),
-            'company_id' => Company::factory()->create()
+            'status' => ProjectStatus::from($statuses[array_rand($statuses)]),
+            'company_name' => fake()->company,
+            'company_address' => fake()->address,
         ];
     }
 
     /**
      * Add specific Company relation.
-     * @param Company $company
+     * @param User $user
      * @return static
      */
-    public function withCompany(Company $company): static
+    public function withUser(User $user): static
     {
         return $this->state([
-            'company_id' => $company,
+            'user_id' => $user,
         ]);
     }
 }

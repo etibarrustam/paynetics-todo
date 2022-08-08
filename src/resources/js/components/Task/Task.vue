@@ -4,11 +4,11 @@
             <div class="container-fluid">
                 <div class="header-body">
                     <div class="row align-items-center py-4">
-                        <div class="col-lg-6 col-7">
+                        <div class="col-lg-3 col-7">
                             <h6 class="h2 text-white d-inline-block mb-0">Task</h6>
                         </div>
                         <div class="col-lg-6 col-5 text-right">
-                            <a href="#" class="btn btn-sm btn-neutral" @click="addTaskModel=!addTaskModel">New</a>
+                            <a href="#" class="btn btn-sm btn-neutral" @click="newTask">New</a>
                         </div>
                     </div>
                 </div>
@@ -24,6 +24,21 @@
                                 <div class="col">
                                     <h3 class="mb-0">Task</h3>
                                 </div>
+                                <div class="col">
+                                    <div class="form-group mt--3">
+                                        <label class="form-control-label">Choose project</label>
+                                        <select
+                                            class="form-control"
+                                            @change="getTasks"
+                                            ref="getStatus"
+                                            v-model="params.project_id"
+                                        >
+                                            <option :value="project.id" v-for="project in projects">
+                                                {{ project.name }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -33,7 +48,6 @@
                                 <thead class="thead-light">
                                 <tr>
                                     <th scope="col" class="sort">Task</th>
-                                    <th scope="col" class="sort">Responsible User</th>
                                     <th scope="col" class="sort">Status</th>
                                     <th scope="col" class="sort">Due Date</th>
                                     <th scope="col" class="sort">Action</th>
@@ -48,25 +62,20 @@
                                             </div>
                                         </div>
                                     </th>
-                                    <td class="budget">
-                                        {{ item.responsible_user }}
-                                    </td>
                                     <td>
-                                        <span class="badge badge-dot mr-4">
-                                            <i class="bg-danger" v-if="item.status == status.pending"></i>
-                                            <i class="bg-success" v-if="item.status == status.completed"></i>
-                                            <span class="status">{{ item.status }}</span>
-                                        </span>
+                                    <span class="badge badge-dot mr-4">
+                                        <span class="status">{{ getStatusName(item.status) }}</span>
+                                    </span>
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <span class="completion mr-2">{{ item.due_date }}</span>
+                                            <span class="completion mr-2">{{ item.end_at }}</span>
                                         </div>
                                     </td>
                                     <td>
                                         <div style="display: inline-flex">
                                             <div>
-                                                <button class="btn btn-primary btn-sm" @click="editBtn(item.id)">
+                                                <button class="btn btn-primary btn-sm" @click="edit(item.id)">
                                                     <i class="far fa-edit"></i>
                                                     <span><strong>Edit</strong></span>
                                                 </button>
@@ -91,68 +100,50 @@
                 </div>
             </div>
         </div>
-        <vs-dialog v-model="addTaskModel" prevent-close blur>
+        <vs-dialog v-model="createForm" prevent-close blur>
             <template #header>
                 <h4 class="not-margin">
                     Add New <b>Task</b>
                 </h4>
             </template>
-            <form v-on:submit.prevent="addTask()" id="addTaskForm">
+            <form v-on:submit.prevent="createOrUpdate()" id="addTaskForm">
                 <div class="form-group">
-                    <label class="form-control-label">Name Of Task</label>
-                    <input class="form-control" placeholder="Name" v-model="addPostData.name"/>
+                    <label class="form-control-label">Name</label>
+                    <input class="form-control" placeholder="Name" v-model="task.name"/>
                 </div>
                 <div class="form-group mt--3">
-                    <label class="form-control-label">Responsible User</label>
-                    <input class="form-control" placeholder="Responsible User" v-model="addPostData.responsible_user"/>
+                    <label class="form-control-label">Description</label>
+                    <textarea class="form-control" placeholder="Description" v-model="task.description"></textarea>
                 </div>
                 <div class="form-group mt--3">
                     <label class="form-control-label">Status</label>
-                    <select class="form-control" @change="onChangeStatus($event)">
-                        <option value="0">Select Status</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="COMPLETED">Completed</option>
+                    <select class="form-control" @change="onChangeStatus($event)" ref="getStatus" v-model="task.status">
+                        <option :value="status.value" v-for="status in statuses">
+                            {{ status.label }}
+                        </option>
                     </select>
                 </div>
                 <div class="form-group mt--3">
-                    <label class="form-control-label">Due Date</label>
-                    <input class="form-control" placeholder="due date" type="date" v-model="addPostData.due_date"/>
+                    <label class="form-control-label">Employees</label>
+                    <vue-select
+                        :multiple="true"
+                        :options="employees"
+                        label="name"
+                        v-model="task.employees"
+                    >
+                    </vue-select>
+                </div>
+                <div class="form-group mt--3">
+                    <label class="form-control-label">Start Date</label>
+                    <input class="form-control" placeholder="Start date" type="date" v-model="task.start_at"/>
+                </div>
+                <div class="form-group mt--3">
+                    <label class="form-control-label">End Date</label>
+                    <input class="form-control" placeholder="End date" type="date" v-model="task.end_at"/>
                 </div>
                 <div class="footer-dialog text-center">
-                    <button class="btn btn-primary" type="submit">Add New Task</button>
-                </div>
-            </form>
-        </vs-dialog>
-
-        <vs-dialog v-model="editTaskModel" prevent-close blur>
-            <template #header>
-                <h4 class="not-margin">
-                    Add New <b>Task</b>
-                </h4>
-            </template>
-            <form v-on:submit.prevent="updateTask()" id="editTaskForm">
-                <div class="form-group">
-                    <label class="form-control-label">Name Of Task</label>
-                    <input class="form-control" placeholder="Name" v-model="editPostData.name"/>
-                </div>
-                <div class="form-group mt--3">
-                    <label class="form-control-label">Responsible User</label>
-                    <input class="form-control" placeholder="Responsible User" v-model="editPostData.responsible_user"/>
-                </div>
-                <div class="form-group mt--3">
-                    <label class="form-control-label">Status</label>
-                    <select class="form-control" @change="onEditChangeStatus($event)" ref="getStatus">
-                        <option value="0">Select Status</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="COMPLETED">Completed</option>
-                    </select>
-                </div>
-                <div class="form-group mt--3">
-                    <label class="form-control-label">Due Date</label>
-                    <input class="form-control" placeholder="due date" type="date" v-model="editPostData.due_date"/>
-                </div>
-                <div class="footer-dialog text-center">
-                    <button class="btn btn-primary" type="submit">Update Task</button>
+                    <button class="btn btn-primary" type="submit" v-if="!task.id">Add New Task</button>
+                    <button class="btn btn-primary" type="submit" v-else>Edit Task</button>
                 </div>
             </form>
         </vs-dialog>
@@ -178,36 +169,41 @@
                 </div>
             </template>
         </vs-dialog>
+
+        <pagination v-model="params.current_page" :records="params.total" @paginate="pagination"/>
     </div>
 </template>
 
 <script>
+
+import "vue-select/dist/vue-select.css";
+import vSelect from "vue-select";
+import Pagination from 'vue-pagination-2';
+
 export default {
-    name: "Dashboard",
+    name: "Task",
+    components: {
+        "vue-select": vSelect,
+        Pagination
+    },
     data() {
         return {
-            addPostData: {
-                name: null,
-                status: null,
-                responsible_user: null,
-                due_date:null
-            },
-            editPostData: {
-                id: null,
-                name: null,
-                status: null,
-                responsible_user: null,
-                due_date:null
-            },
+            task: {},
             deletePostData: {
                 id: null
             },
-            items: {},
-            status:{
-                pending : "PENDING",
-                completed : "COMPLETED"
+            items: [],
+            projects: [],
+            statuses: [],
+            employees:[],
+            params: {
+                project_id: null,
+                current_page: 1,
+                per_page: 20,
+                total: 20,
+                page: 1
             },
-            addTaskModel: false,
+            createForm: false,
             editTaskModel: false,
             activeTooltip1: false,
             deleteDialog: false,
@@ -215,60 +211,96 @@ export default {
         }
     },
     methods: {
-        getTask() {
+        pagination(page) {
+            this.params.page = page;
+            this.getTasks();
+        },
+        newTask() {
+            this.resetTask();
+            this.createForm =! this.createForm
+        },
+        getTasks() {
+            if (this.employees.length === 0) {
+                this.getEmployees();
+            }
             let loading = this.block("taskLoading");
-            this.axios.get("/api/v1/tasks")
+            this.axios.get("/api/v1/tasks", {params: this.params})
                 .then(response => {
-                    this.items = response.data.data;
-                    loading.close()
-                    this.dataNotFound = false
+                    loading.close();
+
+                    if (response.data.code === 1) {
+                        this.items = response.data.data;
+
+                        if(response.data.per_page) {
+                            this.params.per_page = response.data.per_page;
+                        }
+                        if(response.data.current_page) {
+                            this.params.current_page = response.data.current_page;
+                        }
+                        if(response.data.total) {
+                            this.params.total = response.data.total;
+                        }
+
+                        return;
+                    }
+
+                    this.dataNotFound = true;
+
+                    this.errorNotification(response.data.validation_errors);
                 })
                 .catch(error => {
-                    this.items = null
-                    console.log(error.response.data)
-                    this.dataNotFound = true
-                    loading.close()
+                    this.dataNotFound = true;
+                    this.errorNotification(error.message);
+                    loading.close();
                 })
         },
-        addTask() {
-            let Loading = this.block("addTaskForm");
-            this.axios.post('api/v1/add/task', this.addPostData)
+        createOrUpdate() {
+            if (this.task.id) {
+                return this.update();
+            }
+            let loading = this.block("addTaskForm");
+            this.axios.post('api/v1/tasks', this.task)
                 .then(response => {
-                    if (response.data.status === true) {
-                        document.getElementById("addTaskForm").reset();
-                        Loading.close();
-                        this.addTaskModel = false;
-                        this.getTask()
-                    } else {
-                        this.errorNotification(response.data.message)
-                        Loading.close()
+                    loading.close();
+
+                    if (response.data.code === 1) {
+                        this.createForm = false;
+                        this.resetTask();
+                        this.successNotification('Success');
+                        return this.getTasks();
                     }
+
+                    this.errorNotification(response.data.validation_errors);
                 })
                 .catch(error => {
-                    this.errorNotification(error.response.data.message)
-                    Loading.close()
+                    this.errorNotification(error.message);
+                    loading.close();
                 });
         },
-        updateTask() {
-            let Loading = this.block("editTaskForm");
-            this.axios.put("/api/v1/update/task", this.editPostData)
+        update() {
+            let loading = this.block("addTaskForm");
+            this.axios.put("/api/v1/tasks/" + this.task.id, this.task)
                 .then(response => {
-                    this.editTaskModel = false;
-                    this.successNotification(response.data.message);
-                    Loading.close()
-                    this.getTask()
+                    loading.close();
+
+                    if (response.data.code === 1) {
+                        this.createForm = false;
+                        this.resetTask();
+
+                        this.successNotification('Success');
+                        return this.getTasks();
+                    }
+
+                    this.errorNotification(response.data.validation_errors);
                 })
                 .catch(error => {
-                    this.editTaskModel = false;
-                    this.errorNotification(error.response.data.message);
-                    Loading.close()
+                    this.createForm = false;
+                    this.errorNotification(error.message);
+                    loading.close();
                 });
         },
         onChangeStatus(event) {
-            this.addPostData.status = event.target.value;
-        },
-        onEditChangeStatus(event) {
-            this.editPostData.status = event.target.value;
+            this.task.status = event.target.value;
         },
         deleteBtn(id) {
             if (id == '') {
@@ -278,45 +310,111 @@ export default {
             this.deletePostData.id = id;
         },
         deleteTask() {
-            let Loading = this.block("deleteLoading");
-            this.axios.delete("/api/v1/delete/task/" + this.deletePostData.id)
+            let loading = this.block("deleteLoading");
+            this.axios.delete("/api/v1/tasks/" + this.deletePostData.id)
                 .then(response => {
-                    if (response.data.status === true) {
+                    loading.close();
+
+                    if (response.data.code === 1) {
                         this.deleteDialog = false;
-                        this.successNotification(response.data.message)
-                        this.getTask();
-                        Loading.close();
-                    } else {
-                        this.deleteDialog = false;
-                        this.errorNotification(response.data.message)
-                        Loading.close();
+
+                        this.successNotification('Success');
+                        return this.getProjects();
                     }
+
+                    this.errorNotification(response.data.validation_errors);
                 })
                 .catch(error => {
+                    loading.close();
                     this.deleteDialog = false;
-                    Loading.close();
-                    this.errorNotification(error.response.data.message)
+                    this.errorNotification(error.message);
                 });
         },
-        editBtn(id) {
-            this.editPostData.id = id;
-            this.editTaskModel = true;
-            this.axios.get("/api/v1/get/task/" + id)
+        edit(id) {
+            this.items.forEach((item) => {
+                if (item.id === id) {
+                    this.task = item;
+                }
+            });
+            this.createForm = true;
+        },
+        resetTask() {
+            this.task = {
+                name: null,
+                project_id: this.$route.query.project_id ? this.$route.query.project_id : null,
+                description: null,
+                status: null,
+                start_at: null,
+                end_at: null,
+                employees: []
+            };
+        },
+        getStatusName(id) {
+            let label = '';
+
+            this.statuses.forEach((key, status) => {
+                if (id === status.id) {
+                    label = status.label;
+                }
+            });
+
+            return label;
+        },
+        getStatuses() {
+            this.axios.get("/api/v1/tasks/statuses")
                 .then(response => {
-                    let item = response.data.data;
-                    this.editPostData.name = item.name;
-                    this.editPostData.due_date = item.due_date;
-                    this.editPostData.responsible_user = item.responsible_user;
-                    this.editPostData.status = item.status;
-                    this.$refs.getStatus.value = item.status;
+                    if (response.data.code !== 1) {
+                        this.errorNotification(response.data.validation_errors);
+                    }
+
+                    this.statuses = response.data.data;
                 })
                 .catch(error => {
-                    console.log(error.response.data)
+                    this.errorNotification(error.message);
+                });
+        },
+        getProjects() {
+            let loading = this.block("taskLoading");
+            this.axios.get("/api/v1/projects", {params: {project_id: this.params.project_id}})
+                .then(response => {
+                    if (response.data.code !== 1) {
+                        this.errorNotification(response.data.validation_errors);
+                    }
+
+                    this.projects = response.data.data;
+                    loading.close()
+                })
+                .catch(error => {
+                    this.errorNotification(error.message);
+                    loading.close()
+                })
+        },
+        getEmployees() {
+            this.axios.get("/api/v1/users/employees", {params: {project_id: this.params.project_id}})
+                .then(response => {
+                    if (response.data.code !== 1) {
+                        this.errorNotification(response.data.validation_errors);
+                    }
+
+                    this.employees = response.data.data;
+                })
+                .catch(error => {
+                    this.errorNotification(error.message);
                 });
         },
     },
     mounted() {
-        this.getTask()
+        this.resetTask();
+        this.getProjects();
+        this.getStatuses();
+
+        if (this.$route.query.project_id) {
+            this.params.project_id = this.$route.query.project_id;
+            this.task.project_id = this.$route.query.project_id;
+
+            this.getEmployees();
+            this.getTasks();
+        }
     }
 }
 </script>

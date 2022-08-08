@@ -1,62 +1,25 @@
 <?php
 
+use App\Models\Enums\UserPermission;
+use App\Models\Enums\UserRole;
+
 return [
-    'client' => [
-        'get all company',
-        'show company',
-        'create company',
-        'edit company',
-        'delete company',
+    UserRole::ADMIN->value => [UserPermission::ALL->value],
+    UserRole::USER->value => [
+        UserPermission::PROJECT_ALL->value,
+        UserPermission::PROJECT_SHOW->value,
+        UserPermission::PROJECT_CREATE->value,
+        UserPermission::PROJECT_EDIT->value,
+        UserPermission::PROJECT_DELETE->value,
+        UserPermission::PROJECT_STATUSES->value,
 
-        'get all project',
-        'show project',
-        'create project',
-        'edit project',
-        'delete project',
+        UserPermission::TASK_ALL->value,
+        UserPermission::TASK_SHOW->value,
+        UserPermission::TASK_CREATE->value,
+        UserPermission::TASK_EDIT->value,
+        UserPermission::TASK_DELETE->value,
+        UserPermission::TASK_STATUSES->value,
 
-        'get all task',
-        'show task',
-        'create task',
-        'edit task',
-        'delete task',
-
-        'get all task_status',
-        'show task_status',
-        'create task_status',
-        'edit task_status',
-        'delete task_status',
-    ],
-    'project_manager' => [
-        'show company',
-
-        'get all project',
-        'show project',
-        'create project',
-        'edit project',
-        'delete project',
-
-        'get all task',
-        'show task',
-        'create task',
-        'edit task',
-        'delete task',
-
-        'get all task_status',
-        'show task_status',
-        'create task_status',
-        'edit task_status',
-        'delete task_status',
-    ],
-    'employee' => [
-        'show project',
-
-        'get all task',
-        'show task',
-        'create task',
-        'edit task',
-        'delete task',
-
-        'get all task_status',
-        'show task_status',
-    ],
+        UserPermission::EMPLOYEE_ALL->value,
+    ]
 ];

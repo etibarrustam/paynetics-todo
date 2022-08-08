@@ -2,27 +2,70 @@
 
 namespace Tests\Feature\Controllers;
 
+use App\Models\Enums\UserRole;
 use App\Models\User;
+use Hash;
 use Tests\Feature\ApiTestCase;
 
 class AuthControllerTest extends ApiTestCase
 {
-    public function testRegisterUserShouldReturnSuccess()
+    /**
+     * Test User registration method.
+     * @return void
+     */
+    public function testRegisterUser()
     {
         $user = User::factory()->create();
-
         $userRequestData = $this->userRequestData();
 
-        $this->postJson(
-            route('api.v1.auth.register'),
+        $response = $this->postJson(
+            route('api.v1.auth.register', ['type' => UserRole::USER->value]),
             $userRequestData
-        )->assertOk()->assertJsonStructure(array_keys($this->getSuccessResponse()))
-            ->assertJsonStructure(['data' => array_keys($user->only('id', 'email', 'name', 'created_at', 'updated_at'))]);
+        );
+
+        $content = (array)$response->json('data');
+        $registeredUser = User::whereEmail($content['email'])->firstOrFail();
+
+        $this->assertContains(UserRole::USER->value, $registeredUser->getRoleNames());
+
+        $response->assertOk()
+            ->assertJsonStructure(array_keys($this->getSuccessResponse()))
+            ->assertJsonStructure(
+                ['data' => array_keys($user->only('email', 'name', 'created_at'))]
+            );
     }
 
-    protected function userRequestData():array
+    /**
+     * Test User login method.
+     * @return void
+     */
+    public function testLoginUser()
     {
-        $password = fake()->password();
+        $userRequestData = $this->userRequestData();
+
+        User::factory()->create([
+            'email' => $userRequestData['email'],
+            'password' => Hash::make($userRequestData['password'])
+        ]);
+
+        $this->postJson(
+            route('api.v1.auth.login'),
+            $userRequestData
+        )
+            ->assertOk()
+            ->assertJsonStructure(array_keys($this->getSuccessResponse()))
+            ->assertJsonStructure(
+                ['data' => ['token', 'token_type']]
+            );
+    }
+
+    /**
+     * Generate fake User data.
+     * @return array
+     */
+    protected function userRequestData(): array
+    {
+        $password = "1test@User";
 
         return [
             'name' => fake()->name(),

@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Repositories\Repository;
-use App\Http\Requests\Task\TaskRequest;
+use App\Http\Requests\Task\TaskGetRequest;
+use App\Http\Requests\Task\TaskPostRequest;
+use App\Http\Resources\Task\TaskStatusResource;
 use App\Http\Resources\Task\TaskResource;
-use App\Http\Resources\Task\TaskResourceCollection;
 use App\Http\Responses\ApiResponse;
 use App\Http\Responses\HasJsonResponse;
+use App\Models\Enums\TaskStatus;
 use App\Models\Task\Task;
+use App\Services\TaskService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Throwable;
 
@@ -18,24 +20,28 @@ class TaskController extends Controller
     use HasJsonResponse;
 
     /**
-     * @var Repository
+     * Get all data from Task.
+     * @param TaskGetRequest $request
+     * @return ApiResponse
      */
-    private Repository $repository;
-
-    public function __construct()
+    public function all(TaskGetRequest $request): ApiResponse
     {
-        $this->repository = Repository::make(Task::class);
+        $tasks = Task::whereProjectId($request->get('project_id'))
+            ->with('employees')
+            ->paginate($request->get('per_page'));
+
+        return $this->successResponse(TaskResource::collection($tasks));
     }
 
-    public function all(): ApiResponse
-    {
-        return $this->successResponse(TaskResourceCollection::make($this->repository->all()));
-    }
-
+    /**
+     * Find the Task by id.
+     * @param int $id
+     * @return ApiResponse
+     */
     public function getById(int $id): ApiResponse
     {
         try {
-            $task = $this->repository->getById($id);
+            $task = Task::findOrFail($id);
         } catch (ModelNotFoundException $e) {
             return $this->failResponse(['task' => __('exceptions.entity_not_found', ['entity' => 'Task'])]);
         } catch (Throwable $e) {
@@ -45,10 +51,25 @@ class TaskController extends Controller
         return $this->successResponse(TaskResource::make($task));
     }
 
-    public function store(TaskRequest $request): ApiResponse
+    /**
+     * Get all Task statuses.
+     * @return ApiResponse
+     */
+    public function getStatuses(): ApiResponse
+    {
+        return $this->successResponse(TaskStatusResource::collection(TaskStatus::cases()));
+    }
+
+    /**
+     * Create new Task.
+     * @param TaskPostRequest $request
+     * @param TaskService $service
+     * @return ApiResponse
+     */
+    public function store(TaskPostRequest $request, TaskService $service): ApiResponse
     {
         try {
-            $task = $this->repository->create($request->safe()->toArray());
+            $task = $service->create($request->safe()->toArray());
         } catch (Throwable $e) {
             return $this->serviceUnavailable();
         }
@@ -56,10 +77,17 @@ class TaskController extends Controller
         return $this->successResponse(TaskResource::make($task));
     }
 
-    public function update(int $id, TaskRequest $request): ApiResponse
+    /**
+     * Update Task via given ID.
+     * @param int $id
+     * @param TaskPostRequest $request
+     * @param TaskService $service
+     * @return ApiResponse
+     */
+    public function update(int $id, TaskPostRequest $request, TaskService $service): ApiResponse
     {
         try {
-            $task = $this->repository->update($id, $request->safe());
+            $task = $service->update($id, $request->safe()->toArray());
         } catch (ModelNotFoundException $e) {
             return $this->failResponse(['task' => __('exceptions.entity_not_found', ['entity' => 'Task'])]);
         } catch (Throwable $e) {
@@ -69,16 +97,26 @@ class TaskController extends Controller
         return $this->successResponse(TaskResource::make($task));
     }
 
+    /**
+     * Delete Task via given ID.
+     * @param int $id
+     * @return ApiResponse
+     */
     public function delete(int $id): ApiResponse
     {
         try {
-            $this->repository->delete($id);
+            Task::findOrFail($id)->delete();
         } catch (ModelNotFoundException $e) {
             return $this->failResponse(['task' => __('exceptions.entity_not_found', ['entity' => 'Task'])]);
         } catch (Throwable $e) {
             return $this->serviceUnavailable();
         }
 
-        return $this->successResponse(TaskResource::make());
+        return $this->successResponse();
+    }
+
+    public function assignToEmployees()
+    {
+
     }
 }

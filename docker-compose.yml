@@ -1,94 +1,95 @@
 version: '3.8'
 
 services:
-    server:
-        build:
-            context: ./docker
-            dockerfile: nginx.dockerfile
-            args:
-                - UID=${UID:-1000}
-                - GID=${GID:-1000}
-        ports:
-            - 80:80
-        volumes:
-            - ./src:/var/www/html
-        depends_on:
-            - php
-            - postgres
-        networks:
-            - paynetics_app
-    postgres:
-        image: postgres:alpine
-        restart: unless-stopped
-        tty: true
-        ports:
-            - 5432:5432
-        environment:
-            POSTGRES_DB: paynetics_db
-            POSTGRES_USER: paynetics_user
-            POSTGRES_PASSWORD: paynetics
-            SERVICE_TAGS: dev
-            SERVICE_NAME: postgres
-        volumes:
-            - ./postgres:/var/lib/postgres
-        networks:
-            - paynetics_app
-    php:
-        build:
-            context: ./docker
-            dockerfile: php.dockerfile
-            args:
-                - UID=${UID:-1000}
-                - GID=${GID:-1000}
-        volumes:
-            - ./src:/var/www/html
-        networks:
-            - paynetics_app
-    phpcs:
-        image: cytopia/phpcs
-        volumes:
-            - ./src:/var/www/html
-            - ./CodeSniffer.conf:/usr/bin/CodeSniffer.conf
-    composer:
-        build:
-            context: ./docker
-            dockerfile: composer.dockerfile
-            args:
-                - UID=${UID:-1000}
-                - GID=${GID:-1000}
-        volumes:
-            - ./src:/var/www/html
-        working_dir: /var/www/html
-        depends_on:
-            - php
-        entrypoint: ['composer']
-        networks:
-            - paynetics_app
-    artisan:
-        build:
-            context: ./docker
-            dockerfile: php.dockerfile
-            args:
-                - UID=${UID:-1000}
-                - GID=${GID:-1000}
-        volumes:
-            - ./src:/var/www/html
-        depends_on:
-            - postgres
-        working_dir: /var/www/html
-        entrypoint: ['php', '/var/www/html/artisan']
-        networks:
-            - paynetics_app
-    npm:
-        image: node:16-buster-slim
-        volumes:
-            - ./src:/var/www/html
-        ports:
-            - 5173:5173
-        working_dir: /var/www/html
-        entrypoint: [ 'npm' ]
-        networks:
-            - paynetics_app
+  server:
+    build:
+      context: ./docker
+      dockerfile: nginx.dockerfile
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    ports:
+      - 80:80
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - php
+      - postgres
+    networks:
+      - paynetics_app
+  postgres:
+    image: postgres:alpine
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 5432:5432
+    environment:
+      ## TODO add env variables here
+      POSTGRES_DB: paynetics_db
+      POSTGRES_USER: paynetics_user
+      POSTGRES_PASSWORD: paynetics
+      SERVICE_TAGS: dev
+      SERVICE_NAME: postgres
+    volumes:
+      - ./postgres:/var/lib/postgres
+    networks:
+      - paynetics_app
+  php:
+    build:
+      context: ./docker
+      dockerfile: php.dockerfile
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    volumes:
+      - ./src:/var/www/html
+    networks:
+      - paynetics_app
+  phpcs:
+    image: cytopia/phpcs
+    volumes:
+      - ./src:/var/www/html
+      - ./CodeSniffer.conf:/usr/bin/CodeSniffer.conf
+  composer:
+    build:
+      context: ./docker
+      dockerfile: composer.dockerfile
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    depends_on:
+      - php
+    entrypoint: [ 'composer' ]
+    networks:
+      - paynetics_app
+  artisan:
+    build:
+      context: ./docker
+      dockerfile: php.dockerfile
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - postgres
+    working_dir: /var/www/html
+    entrypoint: [ 'php', '/var/www/html/artisan' ]
+    networks:
+      - paynetics_app
+  yarn:
+    image: node:16-buster-slim
+    volumes:
+      - ./src:/var/www/html
+    ports:
+      - 5173:5173
+    working_dir: /var/www/html
+    entrypoint: [ 'yarn' ]
+    networks:
+      - paynetics_app
 
 networks:
-    paynetics_app:
+  paynetics_app:

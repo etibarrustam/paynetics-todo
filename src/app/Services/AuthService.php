@@ -2,10 +2,8 @@
 
 namespace App\Services;
 
-use App\Exceptions\UserRoleDoesntExistException;
-use App\Http\Repositories\Repository;
+use App\Models\Enums\UserRole;
 use App\Models\User;
-use App\Models\UserRole;
 use Hash;
 use Throwable;
 
@@ -15,13 +13,9 @@ class AuthService
      * Create new user.
      * @throws Throwable
      */
-    public function create(string $role, array $data = []): User
+    public function create(array $data = []): User
     {
-        throw_if(in_array($role, UserRole::cases(), true), UserRoleDoesntExistException::Class);
-
-        $authRepository = Repository::make(User::class);
-
-        $user = $authRepository->create(
+        $user = User::create(
             [
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -29,7 +23,7 @@ class AuthService
             ]
         );
 
-        $user->assignRole($role);
+        $user->assignRole(UserRole::USER->value);
 
         return $user;
     }
