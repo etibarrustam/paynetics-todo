@@ -1,14 +1,16 @@
-# Installation guide for Paynetics Project simple managment sytem
-First, you need install on local machine these soft :
+# Installation guide for Paynetics simple Project Management System
+First, we need install on local machine these soft :
 
 ##### 1. docker
    Mac: https://docs.docker.com/desktop/install/mac-install/
+
    win: https://docs.docker.com/desktop/install/windows-install/
+
    Linux: https://docs.docker.com/engine/install/ubuntu/
 ##### 2. docker-compose
    installation : https://docs.docker.com/compose/install/
 
-##  After installing all soft let's do other steps.
+##  After installing all soft, let's do other steps.
    Clone files from giving repository.
 
 ##  Open CMD/Terminal and run:
@@ -53,4 +55,4 @@ docker-composer.yml and .env.example files to simplify installation
 
 **And open the url http://localhost**
 
-**For admin login, just open http://localhost/admin/**
+**For admin dashboard, just open http://localhost/admin/**
