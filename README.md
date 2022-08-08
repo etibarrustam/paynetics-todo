@@ -2,8 +2,9 @@
 First, you need install on local machine these soft :
 
 ##### 1. docker
-   win: https://docs.docker.com/docker-for-windows/install/
-   Linux: https://docs.docker.com/install/linux/docker-ce/ubuntu/
+   Mac: https://docs.docker.com/desktop/install/mac-install/
+   win: https://docs.docker.com/desktop/install/windows-install/
+   Linux: https://docs.docker.com/engine/install/ubuntu/
 ##### 2. docker-compose
    installation : https://docs.docker.com/compose/install/
 
