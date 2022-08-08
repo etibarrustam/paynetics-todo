@@ -3,14 +3,15 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Task\TaskRequest;
-use App\Http\Resources\Task\TaskStatusResourceCollection;
+use App\Http\Requests\Task\TaskGetRequest;
+use App\Http\Requests\Task\TaskPostRequest;
+use App\Http\Resources\Task\TaskStatusResource;
 use App\Http\Resources\Task\TaskResource;
-use App\Http\Resources\Task\TaskResourceCollection;
 use App\Http\Responses\ApiResponse;
 use App\Http\Responses\HasJsonResponse;
+use App\Models\Enums\TaskStatus;
 use App\Models\Task\Task;
-use App\Models\Task\TaskStatus;
+use App\Services\TaskService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Throwable;
 
@@ -20,11 +21,16 @@ class TaskController extends Controller
 
     /**
      * Get all data from Task.
+     * @param TaskGetRequest $request
      * @return ApiResponse
      */
-    public function all(): ApiResponse
+    public function all(TaskGetRequest $request): ApiResponse
     {
-        return $this->successResponse(TaskResourceCollection::make(Task::all()));
+        $tasks = Task::whereProjectId($request->get('project_id'))
+            ->with('employees')
+            ->paginate($request->get('per_page'));
+
+        return $this->successResponse(TaskResource::collection($tasks));
     }
 
     /**
@@ -51,18 +57,19 @@ class TaskController extends Controller
      */
     public function getStatuses(): ApiResponse
     {
-        return $this->successResponse(TaskStatusResourceCollection::make(TaskStatus::cases()));
+        return $this->successResponse(TaskStatusResource::collection(TaskStatus::cases()));
     }
 
     /**
      * Create new Task.
-     * @param TaskRequest $request
+     * @param TaskPostRequest $request
+     * @param TaskService $service
      * @return ApiResponse
      */
-    public function store(TaskRequest $request): ApiResponse
+    public function store(TaskPostRequest $request, TaskService $service): ApiResponse
     {
         try {
-            $task = Task::create($request->safe()->toArray());
+            $task = $service->create($request->safe()->toArray());
         } catch (Throwable $e) {
             return $this->serviceUnavailable();
         }
@@ -73,14 +80,14 @@ class TaskController extends Controller
     /**
      * Update Task via given ID.
      * @param int $id
-     * @param TaskRequest $request
+     * @param TaskPostRequest $request
+     * @param TaskService $service
      * @return ApiResponse
      */
-    public function update(int $id, TaskRequest $request): ApiResponse
+    public function update(int $id, TaskPostRequest $request, TaskService $service): ApiResponse
     {
         try {
-            $task = Task::findOrFail($id);
-            $task->fill($request->safe()->toArray())->save();
+            $task = $service->update($id, $request->safe()->toArray());
         } catch (ModelNotFoundException $e) {
             return $this->failResponse(['task' => __('exceptions.entity_not_found', ['entity' => 'Task'])]);
         } catch (Throwable $e) {
@@ -106,5 +113,10 @@ class TaskController extends Controller
         }
 
         return $this->successResponse();
+    }
+
+    public function assignToEmployees()
+    {
+
     }
 }

@@ -12,39 +12,7 @@ export const routes = [
                 },
                 component:()=>import('./components/Auth/Login')
             },
-            {
-                path: '/register',
-                name:'register',
-                meta:{
-                    title: 'Register | VueDashboard'
-                },
-                component:()=>import('./components/Auth/Register')
-            },
-            {
-                path: '/forgot-password',
-                name:'forgot-password',
-                meta:{
-                    title: 'Forgot Password | VueDashboard'
-                },
-                component:()=>import('./components/Auth/ForgotPassword')
-            }
         ]
-    },
-    {
-        path: '/verify-email/:key',
-        name:'Verify-Email',
-        meta:{
-            title: 'Verify Email | VueDashboard'
-        },
-        component:()=>import('./components/Auth/VerifyEmail')
-    },
-    {
-        path: '/reset_password/:key',
-        name:'Reset-Password',
-        meta:{
-            title: 'Reset Password | VueDashboard'
-        },
-        component:()=>import('./components/Auth/ResetPassword')
     },
     {
         path: '/',
@@ -55,7 +23,7 @@ export const routes = [
                 path: '/dashboard',
                 name: 'dashboard',
                 meta: {
-                    title: 'My Dashboard | Vue Dashboard'
+                    title: 'My Dashboard | Paynetics'
                 },
                 component:()=>import('./components/Dashboard/Dashboard'),
             },
@@ -63,7 +31,7 @@ export const routes = [
                 path: '/project',
                 name: 'project',
                 meta: {
-                    title: 'Project | Vue Dashboard'
+                    title: 'Project | Paynetics'
                 },
                 component:()=>import('./components/Project/Project'),
             },
@@ -71,35 +39,42 @@ export const routes = [
                 path: '/task',
                 name: 'task',
                 meta: {
-                    title: 'Task | Vue Dashboard'
+                    title: 'Task | Paynetics'
                 },
                 component:()=>import('./components/Task/Task'),
             },
             {
-                path: '/profile',
-                name: 'profile',
+                path: '/user',
+                name: 'User',
                 meta: {
-                    title: 'Profile | Vue Dashboard'
+                    title: 'User | Paynetics'
                 },
-                component:()=>import('./components/Profile/Profile'),
-            },
-            {
-                path: '/setting',
-                name: 'setting',
-                meta: {
-                    title: 'Setting | Vue Dashboard'
-                },
-                component:()=>import('./components/Setting/Setting'),
+                component:()=>import('./components/User/User'),
             },
             {
                 path: '/logout',
                 name: 'logout',
                 meta: {
-                    title: 'Logout | Vue Dashboard'
+                    title: 'Logout | Paynetics'
                 },
                 component:()=>import('./components/Logout'),
             },
 
+        ]
+    },
+    {
+        path: '/admin',
+        component: ()=>import('./components/Auth/Auth'),
+        redirect: '/admin/login',
+        children:[
+            {
+                path: '/admin/login',
+                name:'Admin',
+                meta:{
+                    title: 'Admin Login | VueDashboard'
+                },
+                component:()=>import('./components/Auth/AdminLogin')
+            },
         ]
     },
     {

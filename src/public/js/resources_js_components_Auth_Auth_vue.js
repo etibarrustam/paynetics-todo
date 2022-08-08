@@ -14,13 +14,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: "Auth",
   beforeMount: function beforeMount() {
+    var _this = this;
+
     this.axios.get("api/v1/auth/check").then(function (response) {
-      if (response.data.status === true) {
-        window.location.href = '/dashboard';
-      } else {
-        window.location.href = '/login';
+      if (response.data.code === 1) {
+        return _this.$router.push('dashboard');
       }
-    })["catch"](function (error) {});
+
+      _this.$router.push('login');
+    });
   }
 });
 

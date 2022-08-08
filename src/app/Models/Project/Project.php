@@ -4,13 +4,13 @@ namespace App\Models\Project;
 
 use App\Models\Company\Company;
 use App\Models\Task\Task;
-use App\Models\Traits\DefaultDateTimeFormat;
+use App\Models\Traits\Searchable;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -56,33 +56,45 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $projectable_type
  * @method static \Illuminate\Database\Eloquent\Builder|Project whereProjectableId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Project whereProjectableType($value)
+ * @property string $company_name
+ * @property string|null $company_address
+ * @method static Builder|Project search(?string $search = null)
+ * @method static Builder|Project whereCompanyAddress($value)
+ * @method static Builder|Project whereCompanyName($value)
  */
 class Project extends Model
 {
     use HasFactory;
     use SoftDeletes;
-    use DefaultDateTimeFormat;
+    use Searchable;
 
     /**
      * @inheritdoc
      */
     protected $fillable = [
         'name',
+        'user_id',
         'description',
         'status',
-        'duration',
-        'projectable_id',
-        'projectable_type',
+        'company_name',
+        'company_address',
     ];
 
     /**
      * @inheritdoc
      */
-    protected $dates = [
-        'created_at',
-        'updated_at',
-        'duration'
-    ];
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::addGlobalScope('only_for_owners', function ($query) {
+            if (isAdmin()) {
+                return $query;
+            }
+
+            return $query->where('projects.user_id', auth()->id());
+        });
+    }
 
     /**
      * Get related tasks.
@@ -100,15 +112,5 @@ class Project extends Model
     public function employees(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'project_employees');
-    }
-
-
-    /**
-     * Get the related parent model. (User, Company)
-     * @return MorphTo
-     */
-    public function projectable(): MorphTo
-    {
-        return $this->morphTo();
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\Project;
 
-use App\Models\Project\ProjectStatus;
+use App\Models\Enums\ProjectStatus;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProjectStatusResource extends JsonResource

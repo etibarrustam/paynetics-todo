@@ -4,28 +4,44 @@ namespace App\Services;
 
 use App\Models\Company\Company;
 use App\Models\Project\Project;
+use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class ProjectService
 {
     public function create(array $data): Project
     {
-        return Project::create(array_merge($data, $this->getOwner($data['company_id'] ?? null)));
-    }
+        $data['user_id'] = auth()->id();
 
-    protected function getOwner(int $companyId = null): array
-    {
-        if ($companyId) {
-            $company = Company::find($companyId);
+        $project = Project::create($data);
 
-            return [
-                'projectable_id' => $company->id,
-                'projectable_type' => Company::class,
-            ];
+        if (isset($data['employees'])) {
+            $project->employees()->sync(array_column($data['employees'], 'id'));
         }
 
-        return [
-            'projectable_id' => auth()->id(),
-            'projectable_type' => get_class(auth()->user()),
-        ];
+        return $project;
+    }
+
+    public function update(int $id, array $data): Project
+    {
+        $project = Project::findOrFail($id);
+        $project->fill($data)->save();
+
+        if (isset($data['employees'])) {
+            $project->employees()->sync(array_column($data['employees'], 'id'));
+        }
+
+        return $project;
+    }
+
+    public function getEmployeesByProjectId(int $projectId, array $params = []): LengthAwarePaginator|array
+    {
+        $users = User::where('id', '!=', auth()->id())->withoutGlobalScope('only_for_owners');
+
+        if (isset($params['project_id'])){
+            $users = $users->whereRelation('workProjects', 'projects.id', $projectId);
+        }
+
+        return $users->paginate($params['per_page']);
     }
 }

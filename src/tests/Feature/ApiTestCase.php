@@ -3,19 +3,19 @@
 namespace Tests\Feature;
 
 use App\Http\Responses\ApiCode;
+use App\Models\Enums\UserRole;
 use App\Models\User;
-use App\Models\UserRole;
 use Database\Seeders\RolePermissionsSeeder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ApiTestCase extends TestCase
 {
-    private Authenticatable $user;
+    protected Authenticatable $user;
 
-    /**
-     */
     public function getSuccessResponse(array $data = []): array
     {
         return [
@@ -23,6 +23,19 @@ class ApiTestCase extends TestCase
             'data' => $data ?: null,
             'validation_errors' => []
         ];
+    }
+
+    public function getSuccessResponsePagination(
+        array $data = [],
+        string $url = '',
+        int $total = 20,
+        int $perPage = 20
+    ): array
+    {
+        return array_merge(
+            (new LengthAwarePaginator($data, $total, $perPage))->setPath($url)->toArray(),
+            $this->getSuccessResponse($data)
+        );
     }
 
     public function getFailResponse(array $errors = []): array
@@ -39,7 +52,7 @@ class ApiTestCase extends TestCase
         $this->user = User::factory()->create();
         $this->user->assignRole([$role->value]);
 
-        $this->actingAs($this->user, 'sanctum');
+        Sanctum::actingAs($this->user, config('roles.' . UserRole::USER->value));
     }
 
     protected function seedRoleAndPermissions(): void

@@ -37,15 +37,13 @@ class AuthController extends Controller
 
     /**
      * Register new User 'Client, Employee, Project Manager'.
-     * @param string $type
      * @param AuthRegisterRequestAlias $request
      * @return ApiResponseAlias
      */
-    public function register(string $type, AuthRegisterRequest $request): ApiResponse
+    public function register(AuthRegisterRequest $request): ApiResponse
     {
         try {
             $user = $this->service->create(
-                $type,
                 $request->safe(['name', 'email', 'password']),
             );
         } catch (UserRoleDoesntExistException $e) {
@@ -74,7 +72,31 @@ class AuthController extends Controller
             return $this->successResponse(AuthTokenResource::make($user));
         }
 
+        return $this->failResponse(['email' => [__('auth.failed')]]);
+    }
+
+    /**
+     * Admin sign in method.
+     * @param AuthLoginRequestAlias $request
+     * @return ApiResponseAlias
+     */
+    public function adminLogin(AuthLoginRequest $request): ApiResponse
+    {
+        if (
+            Auth::guard('web_admin')->attempt($request->safe(['email', 'password'])) &&
+            $user = Auth::guard('web_admin')->user()
+        ) {
+            $user->access_token = $user->createToken('access_token')->plainTextToken;
+
+            return $this->successResponse(AuthTokenResource::make($user));
+        }
+
         return $this->failResponse(['email' => __('auth.failed')]);
+    }
+
+    public function check(): ApiResponse
+    {
+        return $this->successResponse();
     }
 
     /**

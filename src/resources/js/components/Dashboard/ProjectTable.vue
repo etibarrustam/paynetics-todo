@@ -19,8 +19,6 @@
                         <thead class="thead-light">
                         <tr>
                             <th scope="col" class="sort">Project</th>
-                            <th scope="col" class="sort">Budget</th>
-                            <th scope="col" class="sort">Responsible User</th>
                             <th scope="col" class="sort">Status</th>
                             <th scope="col" class="sort">Completion</th>
                             <th scope="col" class="sort">Create At</th>
@@ -37,18 +35,8 @@
                                     </div>
                                 </div>
                             </th>
-                            <td class="budget">
-                                {{ item.budget }}
-                            </td>
-                            <td class="budget">
-                                {{ item.responsible_user }}
-                            </td>
                             <td>
                                 <span class="badge badge-dot mr-4">
-                                    <i class="bg-warning" v-if="item.status == status.pending"></i>
-                                    <i class="bg-success" v-if="item.status == status.completed"></i>
-                                    <i class="bg-danger" v-if="item.status == status.delayed"></i>
-                                    <i class="bg-info" v-if="item.status == status.schedule"></i>
                                     {{ item.status }}
                                 </span>
                             </td>
@@ -57,10 +45,10 @@
                                     <span class="completion mr-2">{{ item.completion }} %</span>
                                     <div>
                                         <div class="progress">
-                                            <div class="progress-bar bg-warning" v-if="item.status == status.pending" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>
-                                            <div class="progress-bar bg-success" v-if="item.status == status.completed" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>
-                                            <div class="progress-bar bg-danger" v-if="item.status == status.delayed" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>
-                                            <div class="progress-bar bg-info" v-if="item.status == status.schedule" role="progressbar"  v-bind:style="{ width: item.completion + '%' }"></div>
+                                            <div class="progress-bar bg-warning" v-if="item.status == 0" role="progressbar"  v-bind:style="{ width: '25%' }"></div>
+                                            <div class="progress-bar bg-success" v-if="item.status == 1" role="progressbar"  v-bind:style="{ width: '50%' }"></div>
+                                            <div class="progress-bar bg-danger" v-if="item.status == 2" role="progressbar"  v-bind:style="{ width: '75%' }"></div>
+                                            <div class="progress-bar bg-info" v-if="item.status == 3" role="progressbar"  v-bind:style="{ width: '100%' }"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -86,39 +74,51 @@
 
 <script>
 export default {
-    name: "ProductTable",
+    name: "ProjectTable",
     data(){
         return{
             items:{},
-            status:{
-                pending : "PENDING",
-                completed : "COMPLETED",
-                schedule : "SCHEDULE",
-                delayed : "DELAYED"
-            },
+            statuses:[],
             dataNotFound : false
         }
     },
     methods:{
-        getProject(){
-            let Loading = this.block("projectLoading")
+        getProjects(){
+            let loading = this.block("projectLoading")
             this.axios.get("/api/v1/projects")
                 .then(response =>{
-                    this.items = response.data.data;
-                    console.log(response.data.data)
-                    Loading.close()
-                    this.dataNotFound = false
+                    loading.close();
+
+                    if (response.data.code === 1) {
+                        this.items = response.data.data;
+                        return;
+                    }
+
+                    this.errorNotification(response.data.validation_errors);
                 })
                 .catch(error =>{
-                    this.items = null
-                    this.dataNotFound = true
-                    console.log(error.response.data)
-                    Loading.close()
+                    loading.close();
+                    this.dataNotFound = true;
+                    this.errorNotification(error.message);
                 })
-        }
+        },
+        getStatuses() {
+            this.axios.get("/api/v1/projects/statuses")
+                .then(response => {
+                    if (response.data.code !== 1) {
+                        this.errorNotification(response.data.validation_errors);
+                    }
+
+                    this.statuses = response.data.data;
+                })
+                .catch(error => {
+                    this.errorNotification(error.message);
+                });
+        },
     },
     mounted() {
-        this.getProject()
+        this.getProjects();
+        this.getStatuses();
     }
 }
 </script>

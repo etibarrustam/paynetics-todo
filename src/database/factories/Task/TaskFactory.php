@@ -2,9 +2,9 @@
 
 namespace Database\Factories\Task;
 
-use App\Models\Project\ProjectStatus;
+use App\Models\Enums\TaskStatus;
+use App\Models\Project\Project;
 use App\Models\Task\Task;
-use App\Models\Task\TaskStatus;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,18 +20,19 @@ class TaskFactory  extends Factory
      */
     public function definition(): array
     {
-
+        $statuses = TaskStatus::toArray();
         return [
             'name' => fake()->jobTitle,
+            'project_id' => Project::factory()->create(),
             'description' => fake()->realText,
-            'status' => TaskStatus::TODO,
-            'start_at' => Carbon::now(),
-            'end_at' => Carbon::now()->addDays(5)
+            'status' => TaskStatus::from($statuses[array_rand($statuses)]),
+            'start_at' => Carbon::now()->addDay()->toDateString(),
+            'end_at' => Carbon::now()->addDays(5)->toDateString()
         ];
     }
 
     /**
-     * Add specific Project Status relation.
+     * Add specific Task Status relation.
      * @param TaskStatus $status
      * @return static
      */
@@ -39,6 +40,18 @@ class TaskFactory  extends Factory
     {
         return $this->state([
             'status' => $status,
+        ]);
+    }
+
+    /**
+     * Add specific Project.
+     * @param Project $project
+     * @return static
+     */
+    public function withProject(Project $project): static
+    {
+        return $this->state([
+            'project_id' => $project,
         ]);
     }
 }

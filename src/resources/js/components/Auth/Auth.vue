@@ -14,14 +14,11 @@ export default {
         this.axios
         .get("api/v1/auth/check")
         .then(response => {
-            if (response.data.status === true){
-                window.location.href = '/dashboard';
-            }else {
-                window.location.href = '/login';
+            if (response.data.code === 1){
+                return this.$router.push('dashboard');
             }
-        })
-        .catch(error => {
 
+            this.$router.push('login');
         });
     }
 }

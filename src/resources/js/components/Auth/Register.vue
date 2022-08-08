@@ -106,16 +106,17 @@ export default {
         register(){
             let loading = this.block('registerLoader');
             this.axios.post("api/v1/register",this.registerData)
-                .then(response =>{
-                    if (response.data.status === true){
-                        this.login(this.registerData.email,this.registerData.password)
-                    }else{
-                        this.errorNotification(response.data.message)
-                        loading.close();
+                .then(response => {
+                    loading.close();
+
+                    if (response.data.code === 1){
+                        return this.login(this.registerData.email,this.registerData.password)
                     }
+
+                    this.errorNotification(response.data.validation_errors);
                 })
                 .catch(error => {
-                    this.errorNotification(error.response.data.message)
+                    this.errorNotification(error.message);
                     loading.close();
                 });
         },
@@ -125,17 +126,15 @@ export default {
             let loading = this.block('registerLoader');
             this.axios.post("api/v1/login",this.loginData)
                 .then(response => {
-                    if (response.data.status === true){
-                        let loading = this.block('registerLoader');
-                        window.location.href = '/dashboard';
-                    }else{
-                        this.errorNotification(response.data.message)
-                        let loading = this.block('registerLoader');
+                    loading.close();
+                    if (response.data.code === 1){
+                        return this.$router.push('dashboard');
                     }
+                    this.errorNotification(response.data.validation_errors)
                 })
                 .catch(error => {
-                    this.errorNotification(error.response.data.message)
-                    let loading = this.block('registerLoader');
+                    loading.close();
+                    this.errorNotification(error.message);
                 });
         }
     },

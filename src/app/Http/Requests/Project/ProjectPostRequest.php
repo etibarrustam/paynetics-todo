@@ -2,10 +2,10 @@
 
 namespace App\Http\Requests\Project;
 
-use App\Models\Project\ProjectStatus;
+use App\Models\Enums\ProjectStatus;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProjectRequest extends FormRequest
+class ProjectPostRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,8 +27,10 @@ class ProjectRequest extends FormRequest
         return [
             "name" => "required|string|max:255",
             "description" => "required|string",
-            "company_id" => "sometimes|exists:companies,id",
             "status" => "required|in:" . implode(",", ProjectStatus::toArray()),
+            "company_name" => "required|string|max:255",
+            "employees" => "sometimes|array",
+            "employees.*.id" => "int|exists:users,id",
         ];
     }
 }

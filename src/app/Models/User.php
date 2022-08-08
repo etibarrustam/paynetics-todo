@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Enums\UserRole;
 use App\Models\Project\Project;
-use App\Models\Traits\DefaultDateTimeFormat;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -47,6 +50,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @mixin \Eloquent
  * @property-read \Illuminate\Database\Eloquent\Collection|Project[] $projects
  * @property-read int|null $projects_count
+ * @property-read \Illuminate\Database\Eloquent\Collection|Project[] $workProjects
+ * @property-read int|null $work_projects_count
+ * @method static Builder|User whereRole(\App\Models\Enums\UserRole $role)
  */
 class User extends Authenticatable
 {
@@ -54,7 +60,6 @@ class User extends Authenticatable
     use HasFactory;
     use Notifiable;
     use HasRoles;
-    use DefaultDateTimeFormat;
 
     /**
      * The attributes that are mass assignable.
@@ -86,14 +91,33 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    /**
+     * @var string
+     */
     protected string $guard_name = 'api';
 
     /**
      * Get projects.
-     * @return MorphMany
+     * @return HasMany
      */
-    public function projects(): MorphMany
+    public function projects(): HasMany
     {
-        return $this->morphMany(Project::class, 'projectable');
+        return $this->hasMany(Project::class);
+    }
+
+    public function workProjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_employees');
+    }
+
+    /**
+     * Get User by role.
+     * @param Builder $query
+     * @param UserRole $role
+     * @return Builder
+     */
+    public function scopeWhereRole(Builder $query, UserRole $role): Builder
+    {
+        return $query->whereHas('roles', fn($q) => $q->where('name', $role->value));
     }
 }

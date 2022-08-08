@@ -8,24 +8,20 @@
                             <h6 class="h2 text-white d-inline-block mb-0">Dashboard</h6>
                         </div>
                     </div>
-                    <Summary></Summary>
                 </div>
             </div>
         </div>
         <div class="container-fluid mt--6">
-            <ProductTable></ProductTable>
-            <TaskTable></TaskTable>
+            <ProjectTable></ProjectTable>
         </div>
     </div>
 </template>
 
 <script>
 
-import Summary from "./Summary";
-import ProductTable from "./ProductTable";
-import TaskTable from "./TaskTable";
+import ProjectTable from "./ProjectTable";
 export default {
     name: "Dashboard",
-    components: {TaskTable, ProductTable, Summary},
+    components: {ProjectTable},
 }
 </script>
