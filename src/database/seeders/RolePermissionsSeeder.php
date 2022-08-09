@@ -11,7 +11,7 @@ use Spatie\Permission\Models\Permission;
 
 class RolePermissionsSeeder extends Seeder
 {
-    protected const GUARD = 'sanctum';
+    protected const GUARD = 'api';
 
     /**
      * Seed the application's database.

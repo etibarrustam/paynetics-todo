@@ -20,13 +20,10 @@ class ProjectFactory  extends Factory
      */
     public function definition(): array
     {
-        $user = User::factory()->create();
-        $user->assignRole([UserRole::USER->value]);
         $statuses = ProjectStatus::toArray();
 
         return [
             'name' => fake()->company(),
-            'user_id' => $user,
             'description' => fake()->text(),
             'status' => ProjectStatus::from($statuses[array_rand($statuses)]),
             'company_name' => fake()->company,
